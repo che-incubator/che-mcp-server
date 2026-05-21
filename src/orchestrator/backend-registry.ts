@@ -6,7 +6,12 @@ export const BACKEND_REGISTRY: Record<string, BackendEntry> = {
     // --dangerously-skip-permissions: required for unattended operation in a tmux session.
     // Without it, claude-code pauses and prompts for permission on every tool use,
     // blocking indefinitely with no keyboard to respond.
-    launch_command: (task: string) => `claude --dangerously-skip-permissions -p ${shellQuote(task)}`,
+    launch_command: (task: string, system_prompt_file?: string) => {
+      const systemPromptArg = system_prompt_file
+        ? `--append-system-prompt-file ${shellQuote(system_prompt_file)} `
+        : '';
+      return `claude --dangerously-skip-permissions ${systemPromptArg}-p ${shellQuote(task)}`;
+    },
   },
   'opencode': {
     required_tool: 'opencode',
@@ -19,14 +24,14 @@ export const BACKEND_REGISTRY: Record<string, BackendEntry> = {
     //   in agent workspaces). Double-quoted so bash expands the variable at runtime.
     // --dir /projects: sets the project root so writes inside /projects need no permission.
     // Without it, opencode auto-rejects all file writes as "external_directory".
-    launch_command: (task: string) =>
+    launch_command: (task: string, _system_prompt_file?: string) =>
       `opencode run --format json --dir /projects -m "\${OPENCODE_DEFAULT_MODEL:-google/gemini-2.5-flash}" ${shellQuote(task)}`,
   },
   'gemini-cli': {
     required_tool: 'gemini-cli',
     // -y / --yolo: auto-approve all tool actions. Without it, gemini-cli prompts for
     // confirmation on file edits and shell commands, blocking in unattended mode.
-    launch_command: (task: string) => `gemini -y -p ${shellQuote(task)}`,
+    launch_command: (task: string, _system_prompt_file?: string) => `gemini -y -p ${shellQuote(task)}`,
   },
 };
 

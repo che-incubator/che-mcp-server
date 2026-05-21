@@ -17,8 +17,9 @@ export async function launchCodingAgent(params: {
   workspace: string;
   task: string;
   agent_type?: string;
+  system_prompt_file?: string;
 }): Promise<{ status: string; workspace: string; session: string }> {
-  const { workspace, task } = params;
+  const { workspace, task, system_prompt_file } = params;
   const agentType = params.agent_type ?? DEFAULT_AGENT_TYPE;
   const backend = getBackendEntry(agentType);
 
@@ -61,7 +62,7 @@ export async function launchCodingAgent(params: {
   });
   await sendTerminalInput({
     workspace,
-    text: backend.launch_command(prompt),
+    text: backend.launch_command(prompt, system_prompt_file),
     session_name: DEFAULT_SESSION_NAME,
     enter: true,
   });

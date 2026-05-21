@@ -286,10 +286,12 @@ export function createMcpServer(mode: ServerMode = 'orchestration'): McpServer {
       task: z.string().describe('Task description to pass to the coding agent'),
       agent_type: z.enum(['claude-code', 'opencode', 'gemini-cli']).optional()
         .describe('Coding agent to launch (default: claude-code)'),
+      system_prompt_file: z.string().optional()
+        .describe('Path to a system prompt file to append (claude-code only; other agents ignore this parameter)'),
     },
-    async ({ workspace, task, agent_type }) => {
+    async ({ workspace, task, agent_type, system_prompt_file }) => {
       try {
-        const result = await launchCodingAgentTool({ workspace, task, agent_type });
+        const result = await launchCodingAgentTool({ workspace, task, agent_type, system_prompt_file });
         return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       } catch (error) {
         return toolError(error, 'Check get_workspace_status to see the current workspace state.');

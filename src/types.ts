@@ -26,7 +26,7 @@ export interface AgentStatus {
 
 export interface BackendEntry {
   required_tool: string;
-  launch_command: (task: string) => string;
+  launch_command: (task: string, system_prompt_file?: string) => string;
 }
 
 export type ServerMode = 'orchestration' | 'full';
