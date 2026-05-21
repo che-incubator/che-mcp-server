@@ -22,7 +22,7 @@ url = "http://che-mcp-server:8080/mcp"
 ### Local (from git repo)
 
 ```bash
-git clone git@github.com:akurinnoy/che-mcp-server.git
+git clone git@github.com:che-incubator/che-mcp-server.git
 cd che-mcp-server
 npm ci && npm run build
 

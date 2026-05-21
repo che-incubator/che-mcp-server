@@ -47,7 +47,7 @@ describe('buildJsonPatchOps', () => {
 
     const injectorOp = ops.find(o => o.op === 'add' && (o.value as any)?.name === 'opencode-injector');
     expect(injectorOp).toBeDefined();
-    expect((injectorOp!.value as any).container.image).toBe('quay.io/akurinnoy/tools-injector/opencode:next');
+    expect((injectorOp!.value as any).container.image).toBe('quay.io/che-incubator/tools-injector/opencode:next');
   });
 
   it('includes ops that add volume mount and PATH env to editor container', async () => {

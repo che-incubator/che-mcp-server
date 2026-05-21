@@ -7,5 +7,5 @@ resources:
 
 images:
   - name: quay.io/che-incubator/che-mcp-server
-    newName: quay.io/akurinnoy/che-mcp-server
+    newName: quay.io/che-incubator/che-mcp-server
     newTag: next

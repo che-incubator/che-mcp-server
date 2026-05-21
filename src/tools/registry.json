@@ -1,5 +1,5 @@
 {
-  "registry": "quay.io/akurinnoy",
+  "registry": "quay.io/che-incubator",
   "tag": "next",
   "infrastructure": {
     "patch": [
@@ -23,7 +23,7 @@
           "value": {
             "name": "opencode-injector",
             "container": {
-              "image": "quay.io/akurinnoy/tools-injector/opencode:next",
+              "image": "quay.io/che-incubator/tools-injector/opencode:next",
               "command": ["/bin/cp"],
               "args": ["/usr/local/bin/opencode", "/injected-tools/opencode"],
               "memoryLimit": "128Mi",
@@ -51,7 +51,7 @@
           "value": {
             "name": "goose-injector",
             "container": {
-              "image": "quay.io/akurinnoy/tools-injector/goose:next",
+              "image": "quay.io/che-incubator/tools-injector/goose:next",
               "command": ["/bin/cp"],
               "args": ["/usr/local/bin/goose", "/injected-tools/goose"],
               "memoryLimit": "128Mi",
@@ -79,7 +79,7 @@
           "value": {
             "name": "claude-code-injector",
             "container": {
-              "image": "quay.io/akurinnoy/tools-injector/claude-code:next",
+              "image": "quay.io/che-incubator/tools-injector/claude-code:next",
               "command": ["/bin/cp"],
               "args": ["/usr/local/bin/claude", "/injected-tools/claude"],
               "memoryLimit": "128Mi",
@@ -108,7 +108,7 @@
           "value": {
             "name": "kilocode-injector",
             "container": {
-              "image": "quay.io/akurinnoy/tools-injector/kilocode:next",
+              "image": "quay.io/che-incubator/tools-injector/kilocode:next",
               "command": ["/bin/sh"],
               "args": ["-c", "cp -a /opt/kilocode/. /injected-tools/kilocode/"],
               "memoryLimit": "256Mi",
@@ -136,7 +136,7 @@
           "value": {
             "name": "gemini-cli-injector",
             "container": {
-              "image": "quay.io/akurinnoy/tools-injector/gemini-cli:next",
+              "image": "quay.io/che-incubator/tools-injector/gemini-cli:next",
               "command": ["/bin/sh"],
               "args": ["-c", "cp -a /opt/gemini-cli/. /injected-tools/gemini-cli/"],
               "memoryLimit": "256Mi",
@@ -164,7 +164,7 @@
           "value": {
             "name": "tmux-injector",
             "container": {
-              "image": "quay.io/akurinnoy/tools-injector/tmux:next",
+              "image": "quay.io/che-incubator/tools-injector/tmux:next",
               "command": ["/bin/cp"],
               "args": ["/usr/local/bin/tmux", "/injected-tools/tmux"],
               "memoryLimit": "128Mi",
@@ -192,7 +192,7 @@
           "value": {
             "name": "python3-injector",
             "container": {
-              "image": "quay.io/akurinnoy/tools-injector/python3:next",
+              "image": "quay.io/che-incubator/tools-injector/python3:next",
               "command": ["/bin/cp"],
               "args": ["/usr/local/bin/python3", "/injected-tools/python3"],
               "memoryLimit": "128Mi",
