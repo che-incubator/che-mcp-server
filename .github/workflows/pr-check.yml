@@ -62,10 +62,11 @@ jobs:
           tags: ${{ env.IMAGE }}:pr-${{ github.event.pull_request.number }}
 
       - name: Set tag expiration (14 days)
+        continue-on-error: true
         run: |
           EXPIRATION=$(date -u -d '+14 days' +%s)
           curl -s -X PUT \
-            -u "${{ secrets.QUAY_USERNAME }}:${{ secrets.QUAY_PASSWORD }}" \
+            -H "Authorization: Bearer ${{ secrets.QUAY_TOKEN }}" \
             -H "Content-Type: application/json" \
             -d "{\"expiration\": ${EXPIRATION}}" \
             "https://quay.io/api/v1/repository/che-incubator/che-mcp-server/tag/pr-${{ github.event.pull_request.number }}"
