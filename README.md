@@ -101,6 +101,7 @@ The server resolves the namespace in this order:
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
+| `launch_coding_agent` | Launch a coding agent in a workspace, starting the workspace if needed | `workspace`, `task` (required); `agent_type` (optional — `claude-code`, `opencode`, `gemini-cli`; default: `claude-code`); `system_prompt_file` (optional — path to a file whose contents are appended to the agent's system prompt; claude-code only) |
 | `start_agent_session` | Start a tmux session with a coding agent in a workspace | `workspace`, `command` (required); `session_name`, `container` (optional) |
 | `read_agent_output` | Capture recent terminal output from a tmux session | `workspace` (required); `session_name`, `lines`, `container` (optional) |
 | `send_agent_input` | Send text to a tmux session | `workspace`, `text` (required); `session_name`, `enter`, `container` (optional) |
@@ -120,6 +121,8 @@ The server resolves the namespace in this order:
 8. stop_agent_session { workspace: "test-ws" }     → cleanup
 9. stop_workspace { workspace: "test-ws" }         → stop when done
 ```
+
+> **Tip:** Steps 3–4 can be replaced with `launch_coding_agent { workspace: "test-ws", task: "Add tests" }` — it waits for the workspace to start and launches the agent in one call.
 
 ## Container Deployment
 
