@@ -101,7 +101,7 @@ The server resolves the namespace in this order:
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
-| `launch_coding_agent` | Launch a coding agent in a workspace, starting the workspace if needed | `workspace`, `task` (required); `agent_type` (optional — `claude-code`, `opencode`, `gemini-cli`; default: `claude-code`); `system_prompt_file` (optional — path to a file whose contents are appended to the agent's system prompt; claude-code only) |
+| `launch_coding_agent` | Launch a coding agent in a workspace, starting the workspace if needed | `workspace`, `task` (required); `agent_type` (optional — `claude-code`, `opencode`, `gemini-cli`; default: `claude-code`); `system_prompt_file` (optional — path inside the target workspace to a system prompt file appended via `--append-system-prompt-file`; the file must already exist in the workspace filesystem; claude-code only) |
 | `start_agent_session` | Start a tmux session with a coding agent in a workspace | `workspace`, `command` (required); `session_name`, `container` (optional) |
 | `read_agent_output` | Capture recent terminal output from a tmux session | `workspace` (required); `session_name`, `lines`, `container` (optional) |
 | `send_agent_input` | Send text to a tmux session | `workspace`, `text` (required); `session_name`, `enter`, `container` (optional) |

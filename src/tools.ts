@@ -287,7 +287,7 @@ export function createMcpServer(mode: ServerMode = 'orchestration'): McpServer {
       agent_type: z.enum(['claude-code', 'opencode', 'gemini-cli']).optional()
         .describe('Coding agent to launch (default: claude-code)'),
       system_prompt_file: z.string().optional()
-        .describe('Path to a system prompt file to append (claude-code only; other agents ignore this parameter)'),
+        .describe('Path (inside the target workspace) to a system prompt file appended via --append-system-prompt-file. The file must already exist in the workspace filesystem. Claude-code only; other agents ignore this parameter.'),
     },
     async ({ workspace, task, agent_type, system_prompt_file }) => {
       try {
