@@ -39,8 +39,10 @@ describe('createWorkspace', () => {
                 name: 'dev',
                 container: {
                   image: 'quay.io/che-incubator/agent-base-image:latest',
-                  memoryLimit: '4Gi',
-                  memoryRequest: '512Mi',
+                  memoryLimit: '8Gi',
+                  memoryRequest: '1Gi',
+                  cpuRequest: '500m',
+                  cpuLimit: '2000m',
                   endpoints: [
                     {
                       name: 'ttyd-terminal',
@@ -104,8 +106,10 @@ describe('createWorkspace', () => {
                 name: 'dev',
                 container: {
                   image: 'quay.io/che-incubator/agent-base-image:latest',
-                  memoryLimit: '4Gi',
-                  memoryRequest: '512Mi',
+                  memoryLimit: '8Gi',
+                  memoryRequest: '1Gi',
+                  cpuRequest: '500m',
+                  cpuLimit: '2000m',
                   endpoints: [
                     {
                       name: 'ttyd-terminal',

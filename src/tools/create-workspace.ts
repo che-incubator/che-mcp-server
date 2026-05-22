@@ -31,8 +31,10 @@ export async function createWorkspace(params: CreateWorkspaceParams): Promise<{
             name: 'dev',
             container: {
               image: AGENT_BASE_IMAGE,
-              memoryLimit: '4Gi',
-              memoryRequest: '512Mi',
+              memoryLimit: '8Gi',
+              memoryRequest: '1Gi',
+              cpuRequest: '500m',
+              cpuLimit: '2000m',
               endpoints: [
                 {
                   name: 'ttyd-terminal',
