@@ -27,6 +27,8 @@ jobs:
     if: github.event.pull_request.head.repo.fork == false
     runs-on: ubuntu-latest
     needs: quality
+    permissions:
+      pull-requests: write
     env:
       IMAGE: quay.io/che-incubator/che-mcp-server
     steps:
@@ -70,3 +72,11 @@ jobs:
             -H "Content-Type: application/json" \
             -d "{\"expiration\": ${EXPIRATION}}" \
             "https://quay.io/api/v1/repository/che-incubator/che-mcp-server/tag/pr-${{ github.event.pull_request.number }}"
+
+      - name: Comment image tag on PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          gh pr comment "$PR_NUMBER" \
+            --body "**Image built:** \`${{ env.IMAGE }}:pr-${PR_NUMBER}\`"
