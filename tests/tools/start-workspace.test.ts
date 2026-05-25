@@ -8,14 +8,18 @@ describe('startWorkspace', () => {
   });
 
   it('patches workspace to started: true', async () => {
-    const { getCustomObjectsApi, getNamespace } = await import('../../src/kube/client.js');
+    const { getCustomObjectsApi, getNamespace } = await import(
+      '../../src/kube/client.js'
+    );
     const mockApi = {
       patchNamespacedCustomObject: vi.fn().mockResolvedValue({}),
     };
     vi.mocked(getCustomObjectsApi).mockReturnValue(mockApi as any);
     vi.mocked(getNamespace).mockReturnValue('test-namespace');
 
-    const { startWorkspace } = await import('../../src/tools/start-workspace.js');
+    const { startWorkspace } = await import(
+      '../../src/tools/start-workspace.js'
+    );
     const result = await startWorkspace({ workspace: 'my-workspace' });
 
     expect(result).toEqual({ name: 'my-workspace', started: true });

@@ -13,7 +13,7 @@ export const BACKEND_REGISTRY: Record<string, BackendEntry> = {
       return `claude --dangerously-skip-permissions ${systemPromptArg}-p ${shellQuote(task)}`;
     },
   },
-  'opencode': {
+  opencode: {
     required_tool: 'opencode',
     // opencode run: non-interactive batch mode.
     // --format json: emits persistent JSON event lines instead of a TUI that clears on exit,
@@ -31,7 +31,8 @@ export const BACKEND_REGISTRY: Record<string, BackendEntry> = {
     required_tool: 'gemini-cli',
     // -y / --yolo: auto-approve all tool actions. Without it, gemini-cli prompts for
     // confirmation on file edits and shell commands, blocking in unattended mode.
-    launch_command: (task: string, _system_prompt_file?: string) => `gemini -y -p ${shellQuote(task)}`,
+    launch_command: (task: string, _system_prompt_file?: string) =>
+      `gemini -y -p ${shellQuote(task)}`,
   },
 };
 
@@ -41,7 +42,7 @@ export function getBackendEntry(agentType: string): BackendEntry {
   const entry = BACKEND_REGISTRY[agentType];
   if (!entry) {
     throw new Error(
-      `Unknown agent_type "${agentType}". Supported: ${Object.keys(BACKEND_REGISTRY).join(', ')}`
+      `Unknown agent_type "${agentType}". Supported: ${Object.keys(BACKEND_REGISTRY).join(', ')}`,
     );
   }
   return entry;

@@ -4,7 +4,9 @@ interface DeleteWorkspaceParams {
   workspace: string;
 }
 
-export async function deleteWorkspace(params: DeleteWorkspaceParams): Promise<{ name: string; deleted: boolean }> {
+export async function deleteWorkspace(
+  params: DeleteWorkspaceParams,
+): Promise<{ name: string; deleted: boolean }> {
   const api = getCustomObjectsApi();
   const namespace = getNamespace();
 

@@ -8,14 +8,16 @@ describe('getWorkspaceStatus', () => {
   });
 
   it('returns workspace status details from the DevWorkspace CR', async () => {
-    const { getCustomObjectsApi, getNamespace } = await import('../../src/kube/client.js');
+    const { getCustomObjectsApi, getNamespace } = await import(
+      '../../src/kube/client.js'
+    );
     const mockApi = {
       getNamespacedCustomObject: vi.fn().mockResolvedValue({
         metadata: {
           name: 'my-workspace',
           creationTimestamp: '2026-04-01T12:00:00Z',
           annotations: { 'che.eclipse.org/agent-session': 'active' },
-          labels: { 'app': 'che' },
+          labels: { app: 'che' },
         },
         spec: {
           started: true,
@@ -25,7 +27,12 @@ describe('getWorkspaceStatus', () => {
           devworkspaceId: 'workspace-abc123',
           mainUrl: 'https://my-workspace.example.com',
           conditions: [
-            { type: 'Ready', status: 'True', reason: 'AllGood', message: 'Workspace is ready' },
+            {
+              type: 'Ready',
+              status: 'True',
+              reason: 'AllGood',
+              message: 'Workspace is ready',
+            },
           ],
         },
       }),
@@ -33,7 +40,9 @@ describe('getWorkspaceStatus', () => {
     vi.mocked(getCustomObjectsApi).mockReturnValue(mockApi as any);
     vi.mocked(getNamespace).mockReturnValue('test-namespace');
 
-    const { getWorkspaceStatus } = await import('../../src/tools/get-workspace-status.js');
+    const { getWorkspaceStatus } = await import(
+      '../../src/tools/get-workspace-status.js'
+    );
     const result = await getWorkspaceStatus({ workspace: 'my-workspace' });
 
     expect(result).toEqual({
@@ -44,10 +53,15 @@ describe('getWorkspaceStatus', () => {
       started: true,
       createdAt: '2026-04-01T12:00:00Z',
       conditions: [
-        { type: 'Ready', status: 'True', reason: 'AllGood', message: 'Workspace is ready' },
+        {
+          type: 'Ready',
+          status: 'True',
+          reason: 'AllGood',
+          message: 'Workspace is ready',
+        },
       ],
       annotations: { 'che.eclipse.org/agent-session': 'active' },
-      labels: { 'app': 'che' },
+      labels: { app: 'che' },
     });
     expect(mockApi.getNamespacedCustomObject).toHaveBeenCalledWith({
       group: 'workspace.devfile.io',
@@ -59,7 +73,9 @@ describe('getWorkspaceStatus', () => {
   });
 
   it('returns defaults for missing optional fields', async () => {
-    const { getCustomObjectsApi, getNamespace } = await import('../../src/kube/client.js');
+    const { getCustomObjectsApi, getNamespace } = await import(
+      '../../src/kube/client.js'
+    );
     const mockApi = {
       getNamespacedCustomObject: vi.fn().mockResolvedValue({
         metadata: {
@@ -74,7 +90,9 @@ describe('getWorkspaceStatus', () => {
     vi.mocked(getCustomObjectsApi).mockReturnValue(mockApi as any);
     vi.mocked(getNamespace).mockReturnValue('test-namespace');
 
-    const { getWorkspaceStatus } = await import('../../src/tools/get-workspace-status.js');
+    const { getWorkspaceStatus } = await import(
+      '../../src/tools/get-workspace-status.js'
+    );
     const result = await getWorkspaceStatus({ workspace: 'minimal-workspace' });
 
     expect(result).toEqual({

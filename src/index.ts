@@ -13,7 +13,8 @@ async function main(): Promise<void> {
   if (config.transport === 'http') {
     const server = await startHttpServer(config.port);
     const address = server.address();
-    const port = typeof address === 'object' && address ? address.port : config.port;
+    const port =
+      typeof address === 'object' && address ? address.port : config.port;
     console.log(`che-mcp-server listening on port ${port}`);
 
     const shutdown = async () => {

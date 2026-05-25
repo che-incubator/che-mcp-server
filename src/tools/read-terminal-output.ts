@@ -1,4 +1,8 @@
-import { findPodForWorkspace, selectContainer, execInPod } from '../kube/exec.js';
+import {
+  findPodForWorkspace,
+  selectContainer,
+  execInPod,
+} from '../kube/exec.js';
 import { DEFAULT_SESSION_NAME, DEFAULT_LINES } from '../types.js';
 
 interface ReadTerminalOutputParams {
@@ -8,7 +12,9 @@ interface ReadTerminalOutputParams {
   container?: string;
 }
 
-export async function readTerminalOutput(params: ReadTerminalOutputParams): Promise<{ output: string; lines_returned: number }> {
+export async function readTerminalOutput(
+  params: ReadTerminalOutputParams,
+): Promise<{ output: string; lines_returned: number }> {
   const sessionName = params.session_name || DEFAULT_SESSION_NAME;
   const lines = params.lines || DEFAULT_LINES;
 
@@ -16,7 +22,13 @@ export async function readTerminalOutput(params: ReadTerminalOutputParams): Prom
   const containerName = selectContainer(containers, params.container);
 
   const result = await execInPod(podName, containerName, [
-    'tmux', 'capture-pane', '-t', sessionName, '-p', '-S', `-${lines}`,
+    'tmux',
+    'capture-pane',
+    '-t',
+    sessionName,
+    '-p',
+    '-S',
+    `-${lines}`,
   ]);
 
   if (result.exitCode !== 0) {

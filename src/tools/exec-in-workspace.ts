@@ -1,6 +1,14 @@
-import { findPodForWorkspace, selectContainer, execInPod } from '../kube/exec.js';
+import {
+  findPodForWorkspace,
+  selectContainer,
+  execInPod,
+} from '../kube/exec.js';
 import { ensureTerminalSession } from './terminal-session.js';
-import { DEFAULT_SESSION_NAME, DEFAULT_EXEC_TIMEOUT_SECONDS, EXEC_CAPTURE_LINES } from '../types.js';
+import {
+  DEFAULT_SESSION_NAME,
+  DEFAULT_EXEC_TIMEOUT_SECONDS,
+  EXEC_CAPTURE_LINES,
+} from '../types.js';
 
 interface ExecInWorkspaceParams {
   workspace: string;
@@ -16,7 +24,9 @@ interface ExecInWorkspaceResult {
   note: string;
 }
 
-export async function execInWorkspace(params: ExecInWorkspaceParams): Promise<ExecInWorkspaceResult> {
+export async function execInWorkspace(
+  params: ExecInWorkspaceParams,
+): Promise<ExecInWorkspaceResult> {
   const sessionName = params.session_name || DEFAULT_SESSION_NAME;
   const timeoutSeconds = params.timeout_seconds ?? DEFAULT_EXEC_TIMEOUT_SECONDS;
 
@@ -26,20 +36,39 @@ export async function execInWorkspace(params: ExecInWorkspaceParams): Promise<Ex
   await ensureTerminalSession(podName, containerName, sessionName);
 
   await execInPod(podName, containerName, [
-    'tmux', 'send-keys', '-t', sessionName, '-l', params.command,
+    'tmux',
+    'send-keys',
+    '-t',
+    sessionName,
+    '-l',
+    params.command,
   ]);
   await execInPod(podName, containerName, [
-    'tmux', 'send-keys', '-t', sessionName, 'Enter',
+    'tmux',
+    'send-keys',
+    '-t',
+    sessionName,
+    'Enter',
   ]);
 
-  await new Promise<void>((resolve) => setTimeout(resolve, timeoutSeconds * 1000));
+  await new Promise<void>((resolve) =>
+    setTimeout(resolve, timeoutSeconds * 1000),
+  );
 
   const captureResult = await execInPod(podName, containerName, [
-    'tmux', 'capture-pane', '-t', sessionName, '-p', '-S', `-${EXEC_CAPTURE_LINES}`,
+    'tmux',
+    'capture-pane',
+    '-t',
+    sessionName,
+    '-p',
+    '-S',
+    `-${EXEC_CAPTURE_LINES}`,
   ]);
 
   if (captureResult.exitCode !== 0) {
-    throw new Error(`Session "${sessionName}" not found or died before output could be captured`);
+    throw new Error(
+      `Session "${sessionName}" not found or died before output could be captured`,
+    );
   }
 
   return {

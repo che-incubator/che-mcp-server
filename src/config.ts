@@ -9,12 +9,12 @@ export function parseConfig(argv: string[]): ServerConfig {
   const transportArg = getArgValue(argv, '--transport');
   const portArg = getArgValue(argv, '--port');
 
-  const transport = transportArg
-    ?? process.env.CHE_MCP_TRANSPORT
-    ?? 'stdio';
+  const transport = transportArg ?? process.env.CHE_MCP_TRANSPORT ?? 'stdio';
 
   if (transport !== 'stdio' && transport !== 'http') {
-    throw new Error(`Invalid transport "${transport}". Must be "stdio" or "http".`);
+    throw new Error(
+      `Invalid transport "${transport}". Must be "stdio" or "http".`,
+    );
   }
 
   const portStr = portArg ?? process.env.CHE_MCP_PORT;

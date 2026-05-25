@@ -9,7 +9,9 @@ describe('getTerminalState', () => {
   });
 
   it('returns session_alive: true, process_running: true when pane is active', async () => {
-    const { findPodForWorkspace, selectContainer, execInPod } = await import('../../src/kube/exec.js');
+    const { findPodForWorkspace, selectContainer, execInPod } = await import(
+      '../../src/kube/exec.js'
+    );
 
     vi.mocked(findPodForWorkspace).mockResolvedValue({
       podName: 'workspace-pod-123',
@@ -22,7 +24,9 @@ describe('getTerminalState', () => {
       exitCode: 0,
     });
 
-    const { getTerminalState } = await import('../../src/tools/get-terminal-state.js');
+    const { getTerminalState } = await import(
+      '../../src/tools/get-terminal-state.js'
+    );
     const result = await getTerminalState({
       workspace: 'my-workspace',
     });
@@ -35,12 +39,21 @@ describe('getTerminalState', () => {
     expect(execInPod).toHaveBeenCalledWith(
       'workspace-pod-123',
       'dev-container',
-      ['tmux', 'list-panes', '-t', 'agent', '-F', '#{pane_pid} #{pane_dead} #{pane_current_command} #{pane_dead_status}'],
+      [
+        'tmux',
+        'list-panes',
+        '-t',
+        'agent',
+        '-F',
+        '#{pane_pid} #{pane_dead} #{pane_current_command} #{pane_dead_status}',
+      ],
     );
   });
 
   it('returns session_alive: true, process_running: false with exit code 0', async () => {
-    const { findPodForWorkspace, selectContainer, execInPod } = await import('../../src/kube/exec.js');
+    const { findPodForWorkspace, selectContainer, execInPod } = await import(
+      '../../src/kube/exec.js'
+    );
 
     vi.mocked(findPodForWorkspace).mockResolvedValue({
       podName: 'workspace-pod-123',
@@ -53,7 +66,9 @@ describe('getTerminalState', () => {
       exitCode: 0,
     });
 
-    const { getTerminalState } = await import('../../src/tools/get-terminal-state.js');
+    const { getTerminalState } = await import(
+      '../../src/tools/get-terminal-state.js'
+    );
     const result = await getTerminalState({
       workspace: 'my-workspace',
     });
@@ -66,7 +81,9 @@ describe('getTerminalState', () => {
   });
 
   it('returns non-zero exit code when process failed', async () => {
-    const { findPodForWorkspace, selectContainer, execInPod } = await import('../../src/kube/exec.js');
+    const { findPodForWorkspace, selectContainer, execInPod } = await import(
+      '../../src/kube/exec.js'
+    );
 
     vi.mocked(findPodForWorkspace).mockResolvedValue({
       podName: 'workspace-pod-123',
@@ -79,7 +96,9 @@ describe('getTerminalState', () => {
       exitCode: 0,
     });
 
-    const { getTerminalState } = await import('../../src/tools/get-terminal-state.js');
+    const { getTerminalState } = await import(
+      '../../src/tools/get-terminal-state.js'
+    );
     const result = await getTerminalState({
       workspace: 'my-workspace',
     });
@@ -92,7 +111,9 @@ describe('getTerminalState', () => {
   });
 
   it('returns session_alive: false when session does not exist', async () => {
-    const { findPodForWorkspace, selectContainer, execInPod } = await import('../../src/kube/exec.js');
+    const { findPodForWorkspace, selectContainer, execInPod } = await import(
+      '../../src/kube/exec.js'
+    );
 
     vi.mocked(findPodForWorkspace).mockResolvedValue({
       podName: 'workspace-pod-123',
@@ -105,7 +126,9 @@ describe('getTerminalState', () => {
       exitCode: 1,
     });
 
-    const { getTerminalState } = await import('../../src/tools/get-terminal-state.js');
+    const { getTerminalState } = await import(
+      '../../src/tools/get-terminal-state.js'
+    );
     const result = await getTerminalState({
       workspace: 'my-workspace',
     });

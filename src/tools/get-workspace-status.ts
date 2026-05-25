@@ -23,17 +23,19 @@ interface WorkspaceStatus {
   labels: Record<string, string>;
 }
 
-export async function getWorkspaceStatus(params: GetWorkspaceStatusParams): Promise<WorkspaceStatus> {
+export async function getWorkspaceStatus(
+  params: GetWorkspaceStatusParams,
+): Promise<WorkspaceStatus> {
   const api = getCustomObjectsApi();
   const namespace = getNamespace();
 
-  const dw = await api.getNamespacedCustomObject({
+  const dw = (await api.getNamespacedCustomObject({
     group: 'workspace.devfile.io',
     version: 'v1alpha2',
     namespace,
     plural: 'devworkspaces',
     name: params.workspace,
-  }) as any;
+  })) as any;
 
   return {
     name: dw.metadata?.name || '',

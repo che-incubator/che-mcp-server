@@ -52,7 +52,9 @@ describe('startHttpServer', () => {
     const port = (httpServer.address() as any).port;
 
     try {
-      const res = await fetch(`http://localhost:${port}/mcp`, { method: 'PUT' });
+      const res = await fetch(`http://localhost:${port}/mcp`, {
+        method: 'PUT',
+      });
       expect(res.status).toBe(405);
     } finally {
       httpServer.close();

@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../../src/kube/exec.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../src/kube/exec.js')>();
+  const actual =
+    await importOriginal<typeof import('../../src/kube/exec.js')>();
   return {
     ...actual,
     findPodForWorkspace: vi.fn(),
@@ -17,7 +18,9 @@ describe('stopTerminalSession', () => {
   });
 
   it('kills the tmux session', async () => {
-    const { findPodForWorkspace, selectContainer, execInPod } = await import('../../src/kube/exec.js');
+    const { findPodForWorkspace, selectContainer, execInPod } = await import(
+      '../../src/kube/exec.js'
+    );
 
     vi.mocked(findPodForWorkspace).mockResolvedValue({
       podName: 'workspace-pod-123',
@@ -30,7 +33,9 @@ describe('stopTerminalSession', () => {
       exitCode: 0,
     });
 
-    const { stopTerminalSession } = await import('../../src/tools/stop-terminal-session.js');
+    const { stopTerminalSession } = await import(
+      '../../src/tools/stop-terminal-session.js'
+    );
     const result = await stopTerminalSession({
       workspace: 'my-workspace',
     });
@@ -44,7 +49,9 @@ describe('stopTerminalSession', () => {
   });
 
   it('returns success when session is already dead (idempotent)', async () => {
-    const { findPodForWorkspace, selectContainer, execInPod } = await import('../../src/kube/exec.js');
+    const { findPodForWorkspace, selectContainer, execInPod } = await import(
+      '../../src/kube/exec.js'
+    );
 
     vi.mocked(findPodForWorkspace).mockResolvedValue({
       podName: 'workspace-pod-123',
@@ -57,7 +64,9 @@ describe('stopTerminalSession', () => {
       exitCode: 1,
     });
 
-    const { stopTerminalSession } = await import('../../src/tools/stop-terminal-session.js');
+    const { stopTerminalSession } = await import(
+      '../../src/tools/stop-terminal-session.js'
+    );
     const result = await stopTerminalSession({
       workspace: 'my-workspace',
     });
@@ -67,13 +76,17 @@ describe('stopTerminalSession', () => {
   });
 
   it('returns error when workspace is not Running', async () => {
-    const { findPodForWorkspace, WorkspaceNotReadyError } = await import('../../src/kube/exec.js');
+    const { findPodForWorkspace, WorkspaceNotReadyError } = await import(
+      '../../src/kube/exec.js'
+    );
 
     vi.mocked(findPodForWorkspace).mockRejectedValue(
       new WorkspaceNotReadyError('my-workspace', 'Stopped'),
     );
 
-    const { stopTerminalSession } = await import('../../src/tools/stop-terminal-session.js');
+    const { stopTerminalSession } = await import(
+      '../../src/tools/stop-terminal-session.js'
+    );
     await expect(
       stopTerminalSession({
         workspace: 'my-workspace',

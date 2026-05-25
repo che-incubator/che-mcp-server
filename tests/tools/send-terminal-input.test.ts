@@ -9,7 +9,9 @@ describe('sendTerminalInput', () => {
   });
 
   it('sends text with literal flag -l', async () => {
-    const { findPodForWorkspace, selectContainer, execInPod } = await import('../../src/kube/exec.js');
+    const { findPodForWorkspace, selectContainer, execInPod } = await import(
+      '../../src/kube/exec.js'
+    );
 
     vi.mocked(findPodForWorkspace).mockResolvedValue({
       podName: 'workspace-pod-123',
@@ -22,7 +24,9 @@ describe('sendTerminalInput', () => {
       exitCode: 0,
     });
 
-    const { sendTerminalInput } = await import('../../src/tools/send-terminal-input.js');
+    const { sendTerminalInput } = await import(
+      '../../src/tools/send-terminal-input.js'
+    );
     await sendTerminalInput({
       workspace: 'my-workspace',
       text: 'hello world',
@@ -36,7 +40,9 @@ describe('sendTerminalInput', () => {
   });
 
   it('sends Enter when enter is true (default)', async () => {
-    const { findPodForWorkspace, selectContainer, execInPod } = await import('../../src/kube/exec.js');
+    const { findPodForWorkspace, selectContainer, execInPod } = await import(
+      '../../src/kube/exec.js'
+    );
 
     vi.mocked(findPodForWorkspace).mockClear();
     vi.mocked(selectContainer).mockClear();
@@ -53,7 +59,9 @@ describe('sendTerminalInput', () => {
       exitCode: 0,
     });
 
-    const { sendTerminalInput } = await import('../../src/tools/send-terminal-input.js');
+    const { sendTerminalInput } = await import(
+      '../../src/tools/send-terminal-input.js'
+    );
     await sendTerminalInput({
       workspace: 'my-workspace',
       text: 'ls -la',
@@ -76,7 +84,9 @@ describe('sendTerminalInput', () => {
   });
 
   it('does not send Enter when enter is false', async () => {
-    const { findPodForWorkspace, selectContainer, execInPod } = await import('../../src/kube/exec.js');
+    const { findPodForWorkspace, selectContainer, execInPod } = await import(
+      '../../src/kube/exec.js'
+    );
 
     vi.mocked(findPodForWorkspace).mockClear();
     vi.mocked(selectContainer).mockClear();
@@ -93,7 +103,9 @@ describe('sendTerminalInput', () => {
       exitCode: 0,
     });
 
-    const { sendTerminalInput } = await import('../../src/tools/send-terminal-input.js');
+    const { sendTerminalInput } = await import(
+      '../../src/tools/send-terminal-input.js'
+    );
     await sendTerminalInput({
       workspace: 'my-workspace',
       text: 'partial command',
@@ -110,7 +122,9 @@ describe('sendTerminalInput', () => {
   });
 
   it('text with special characters (quotes, $, backticks) passed verbatim', async () => {
-    const { findPodForWorkspace, selectContainer, execInPod } = await import('../../src/kube/exec.js');
+    const { findPodForWorkspace, selectContainer, execInPod } = await import(
+      '../../src/kube/exec.js'
+    );
 
     vi.mocked(findPodForWorkspace).mockResolvedValue({
       podName: 'workspace-pod-123',
@@ -123,7 +137,9 @@ describe('sendTerminalInput', () => {
       exitCode: 0,
     });
 
-    const { sendTerminalInput } = await import('../../src/tools/send-terminal-input.js');
+    const { sendTerminalInput } = await import(
+      '../../src/tools/send-terminal-input.js'
+    );
     const specialText = 'echo "test" $HOME `date`';
     await sendTerminalInput({
       workspace: 'my-workspace',
@@ -139,7 +155,9 @@ describe('sendTerminalInput', () => {
   });
 
   it('returns error when session does not exist', async () => {
-    const { findPodForWorkspace, selectContainer, execInPod } = await import('../../src/kube/exec.js');
+    const { findPodForWorkspace, selectContainer, execInPod } = await import(
+      '../../src/kube/exec.js'
+    );
 
     vi.mocked(findPodForWorkspace).mockResolvedValue({
       podName: 'workspace-pod-123',
@@ -152,7 +170,9 @@ describe('sendTerminalInput', () => {
       exitCode: 1,
     });
 
-    const { sendTerminalInput } = await import('../../src/tools/send-terminal-input.js');
+    const { sendTerminalInput } = await import(
+      '../../src/tools/send-terminal-input.js'
+    );
     await expect(
       sendTerminalInput({
         workspace: 'my-workspace',

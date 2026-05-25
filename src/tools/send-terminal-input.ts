@@ -1,4 +1,8 @@
-import { findPodForWorkspace, selectContainer, execInPod } from '../kube/exec.js';
+import {
+  findPodForWorkspace,
+  selectContainer,
+  execInPod,
+} from '../kube/exec.js';
 import { DEFAULT_SESSION_NAME } from '../types.js';
 
 interface SendTerminalInputParams {
@@ -9,7 +13,9 @@ interface SendTerminalInputParams {
   container?: string;
 }
 
-export async function sendTerminalInput(params: SendTerminalInputParams): Promise<{ success: boolean }> {
+export async function sendTerminalInput(
+  params: SendTerminalInputParams,
+): Promise<{ success: boolean }> {
   const sessionName = params.session_name || DEFAULT_SESSION_NAME;
   const enter = params.enter !== undefined ? params.enter : true;
 
@@ -18,7 +24,12 @@ export async function sendTerminalInput(params: SendTerminalInputParams): Promis
 
   // Send text with literal flag to avoid shell interpretation
   const textResult = await execInPod(podName, containerName, [
-    'tmux', 'send-keys', '-t', sessionName, '-l', params.text,
+    'tmux',
+    'send-keys',
+    '-t',
+    sessionName,
+    '-l',
+    params.text,
   ]);
 
   if (textResult.exitCode !== 0) {
@@ -28,7 +39,11 @@ export async function sendTerminalInput(params: SendTerminalInputParams): Promis
   // Optionally send Enter
   if (enter) {
     await execInPod(podName, containerName, [
-      'tmux', 'send-keys', '-t', sessionName, 'Enter',
+      'tmux',
+      'send-keys',
+      '-t',
+      sessionName,
+      'Enter',
     ]);
   }
 

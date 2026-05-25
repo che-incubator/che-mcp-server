@@ -1,7 +1,12 @@
 import * as k8s from '@kubernetes/client-node';
 import stream from 'stream';
 
-import { getCoreV1Api, getCustomObjectsApi, getNamespace, getKubeConfig } from './client.js';
+import {
+  getCoreV1Api,
+  getCustomObjectsApi,
+  getNamespace,
+  getKubeConfig,
+} from './client.js';
 import { CHE_GATEWAY_CONTAINER, EXEC_TIMEOUT_MS } from '../types.js';
 import type { ExecResult } from '../types.js';
 
@@ -17,7 +22,7 @@ export async function findPodForWorkspace(
   });
 
   const runningPod = podList.items.find(
-    (pod:any) => pod.status?.phase === 'Running',
+    (pod: any) => pod.status?.phase === 'Running',
   );
 
   if (!runningPod) {
@@ -41,9 +46,10 @@ export class WorkspaceNotReadyError extends Error {
 
   constructor(workspaceName: string, phase: string) {
     const retryable = phase === 'Starting';
-    const sessionHint = phase === 'Starting'
-      ? ' Any previous agent sessions have been lost — start a new agent session once the workspace is Running.'
-      : '';
+    const sessionHint =
+      phase === 'Starting'
+        ? ' Any previous agent sessions have been lost — start a new agent session once the workspace is Running.'
+        : '';
     const retryHint = retryable ? ' Retry in a few seconds.' : '';
 
     let message: string;
@@ -77,13 +83,13 @@ async function getWorkspacePhase(workspaceName: string): Promise<string> {
   try {
     const api = getCustomObjectsApi();
     const ns = getNamespace();
-    const dw = await api.getNamespacedCustomObject({
+    const dw = (await api.getNamespacedCustomObject({
       group: 'workspace.devfile.io',
       version: 'v1alpha2',
       namespace: ns,
       plural: 'devworkspaces',
       name: workspaceName,
-    }) as any;
+    })) as any;
     return dw.status?.phase || 'Unknown';
   } catch {
     return 'unknown';
@@ -142,10 +148,11 @@ export async function execInPod(
       reject(new Error(`Exec timed out after ${EXEC_TIMEOUT_MS}ms`));
     }, EXEC_TIMEOUT_MS);
 
-    const shellEscape = (arg: string) =>
-      "'" + arg.replace(/'/g, "'\\''") + "'";
+    const shellEscape = (arg: string) => "'" + arg.replace(/'/g, "'\\''") + "'";
     const wrappedCommand = [
-      'bash', '-lc', `export SHELL=/bin/bash; ${command.map(shellEscape).join(' ')}`,
+      'bash',
+      '-lc',
+      `export SHELL=/bin/bash; ${command.map(shellEscape).join(' ')}`,
     ];
 
     kubeExec
@@ -165,7 +172,7 @@ export async function execInPod(
               ? 0
               : parseInt(
                   status.details?.causes?.find(
-                    (c:any) => c.reason === 'ExitCode',
+                    (c: any) => c.reason === 'ExitCode',
                   )?.message ?? '1',
                   10,
                 );

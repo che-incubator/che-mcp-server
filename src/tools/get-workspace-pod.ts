@@ -18,7 +18,9 @@ interface WorkspacePodInfo {
   containers: ContainerInfo[];
 }
 
-export async function getWorkspacePod(params: GetWorkspacePodParams): Promise<WorkspacePodInfo> {
+export async function getWorkspacePod(
+  params: GetWorkspacePodParams,
+): Promise<WorkspacePodInfo> {
   const { podName } = await findPodForWorkspace(params.workspace);
   const coreApi = getCoreV1Api();
   const namespace = getNamespace();
@@ -28,7 +30,7 @@ export async function getWorkspacePod(params: GetWorkspacePodParams): Promise<Wo
     namespace,
   });
 
-  const containers = (pod.status?.containerStatuses || []).map((cs:any) => ({
+  const containers = (pod.status?.containerStatuses || []).map((cs: any) => ({
     name: cs.name,
     ready: cs.ready,
     restartCount: cs.restartCount,

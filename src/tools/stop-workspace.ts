@@ -4,7 +4,9 @@ interface StopWorkspaceParams {
   workspace: string;
 }
 
-export async function stopWorkspace(params: StopWorkspaceParams): Promise<{ name: string; started: boolean }> {
+export async function stopWorkspace(
+  params: StopWorkspaceParams,
+): Promise<{ name: string; started: boolean }> {
   const api = getCustomObjectsApi();
   const namespace = getNamespace();
 

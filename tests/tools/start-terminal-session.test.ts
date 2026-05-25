@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../../src/kube/exec.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../src/kube/exec.js')>();
+  const actual =
+    await importOriginal<typeof import('../../src/kube/exec.js')>();
   return {
     ...actual,
     findPodForWorkspace: vi.fn(),
@@ -18,7 +19,9 @@ describe('startTerminalSession', () => {
   });
 
   it('creates session and returns success', async () => {
-    const { findPodForWorkspace, selectContainer, execInPod } = await import('../../src/kube/exec.js');
+    const { findPodForWorkspace, selectContainer, execInPod } = await import(
+      '../../src/kube/exec.js'
+    );
 
     vi.mocked(findPodForWorkspace).mockResolvedValue({
       podName: 'workspace-pod-123',
@@ -26,12 +29,18 @@ describe('startTerminalSession', () => {
     });
     vi.mocked(selectContainer).mockReturnValue('dev-container');
     vi.mocked(execInPod)
-      .mockResolvedValueOnce({ stdout: '', stderr: "can't find session: agent", exitCode: 1 }) // has-session: not found
+      .mockResolvedValueOnce({
+        stdout: '',
+        stderr: "can't find session: agent",
+        exitCode: 1,
+      }) // has-session: not found
       .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 }) // new-session
       .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 }) // set-option remain-on-exit
       .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 }); // set-option history-limit
 
-    const { startTerminalSession } = await import('../../src/tools/start-terminal-session.js');
+    const { startTerminalSession } = await import(
+      '../../src/tools/start-terminal-session.js'
+    );
     const result = await startTerminalSession({ workspace: 'my-workspace' });
 
     expect(result).toEqual({ success: true, session_name: 'agent' });
@@ -53,7 +62,9 @@ describe('startTerminalSession', () => {
   });
 
   it('uses default session name "agent" when not specified', async () => {
-    const { findPodForWorkspace, selectContainer, execInPod } = await import('../../src/kube/exec.js');
+    const { findPodForWorkspace, selectContainer, execInPod } = await import(
+      '../../src/kube/exec.js'
+    );
 
     vi.mocked(findPodForWorkspace).mockResolvedValue({
       podName: 'workspace-pod-123',
@@ -61,46 +72,68 @@ describe('startTerminalSession', () => {
     });
     vi.mocked(selectContainer).mockReturnValue('dev-container');
     vi.mocked(execInPod)
-      .mockResolvedValueOnce({ stdout: '', stderr: "can't find session", exitCode: 1 }) // has-session
+      .mockResolvedValueOnce({
+        stdout: '',
+        stderr: "can't find session",
+        exitCode: 1,
+      }) // has-session
       .mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 }); // new-session + set-options
 
-    const { startTerminalSession } = await import('../../src/tools/start-terminal-session.js');
+    const { startTerminalSession } = await import(
+      '../../src/tools/start-terminal-session.js'
+    );
     const result = await startTerminalSession({ workspace: 'my-workspace' });
 
     expect(result.session_name).toBe('agent');
   });
 
   it('throws when workspace is not Running', async () => {
-    const { findPodForWorkspace, WorkspaceNotReadyError } = await import('../../src/kube/exec.js');
+    const { findPodForWorkspace, WorkspaceNotReadyError } = await import(
+      '../../src/kube/exec.js'
+    );
 
     vi.mocked(findPodForWorkspace).mockRejectedValue(
       new WorkspaceNotReadyError('my-workspace', 'Starting'),
     );
 
-    const { startTerminalSession } = await import('../../src/tools/start-terminal-session.js');
+    const { startTerminalSession } = await import(
+      '../../src/tools/start-terminal-session.js'
+    );
     await expect(
       startTerminalSession({ workspace: 'my-workspace' }),
     ).rejects.toThrow('Workspace "my-workspace" is starting');
   });
 
   it('throws when session already exists', async () => {
-    const { findPodForWorkspace, selectContainer, execInPod } = await import('../../src/kube/exec.js');
+    const { findPodForWorkspace, selectContainer, execInPod } = await import(
+      '../../src/kube/exec.js'
+    );
 
     vi.mocked(findPodForWorkspace).mockResolvedValue({
       podName: 'workspace-pod-123',
       containers: ['dev-container'],
     });
     vi.mocked(selectContainer).mockReturnValue('dev-container');
-    vi.mocked(execInPod).mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 }); // has-session: found
+    vi.mocked(execInPod).mockResolvedValueOnce({
+      stdout: '',
+      stderr: '',
+      exitCode: 0,
+    }); // has-session: found
 
-    const { startTerminalSession } = await import('../../src/tools/start-terminal-session.js');
+    const { startTerminalSession } = await import(
+      '../../src/tools/start-terminal-session.js'
+    );
     await expect(
       startTerminalSession({ workspace: 'my-workspace' }),
-    ).rejects.toThrow('Session "agent" already exists in workspace "my-workspace"');
+    ).rejects.toThrow(
+      'Session "agent" already exists in workspace "my-workspace"',
+    );
   });
 
   it('throws when tmux is not installed', async () => {
-    const { findPodForWorkspace, selectContainer, execInPod } = await import('../../src/kube/exec.js');
+    const { findPodForWorkspace, selectContainer, execInPod } = await import(
+      '../../src/kube/exec.js'
+    );
 
     vi.mocked(findPodForWorkspace).mockResolvedValue({
       podName: 'workspace-pod-123',
@@ -108,17 +141,31 @@ describe('startTerminalSession', () => {
     });
     vi.mocked(selectContainer).mockReturnValue('dev-container');
     vi.mocked(execInPod)
-      .mockResolvedValueOnce({ stdout: '', stderr: "can't find session", exitCode: 1 }) // has-session: not found
-      .mockResolvedValueOnce({ stdout: '', stderr: 'tmux: not found', exitCode: 127 }); // new-session fails
+      .mockResolvedValueOnce({
+        stdout: '',
+        stderr: "can't find session",
+        exitCode: 1,
+      }) // has-session: not found
+      .mockResolvedValueOnce({
+        stdout: '',
+        stderr: 'tmux: not found',
+        exitCode: 127,
+      }); // new-session fails
 
-    const { startTerminalSession } = await import('../../src/tools/start-terminal-session.js');
+    const { startTerminalSession } = await import(
+      '../../src/tools/start-terminal-session.js'
+    );
     await expect(
       startTerminalSession({ workspace: 'my-workspace' }),
-    ).rejects.toThrow('tmux not found in container. The workspace image must include tmux.');
+    ).rejects.toThrow(
+      'tmux not found in container. The workspace image must include tmux.',
+    );
   });
 
   it('uses provided session_name when specified', async () => {
-    const { findPodForWorkspace, selectContainer, execInPod } = await import('../../src/kube/exec.js');
+    const { findPodForWorkspace, selectContainer, execInPod } = await import(
+      '../../src/kube/exec.js'
+    );
 
     vi.mocked(findPodForWorkspace).mockResolvedValue({
       podName: 'workspace-pod-123',
@@ -126,11 +173,20 @@ describe('startTerminalSession', () => {
     });
     vi.mocked(selectContainer).mockReturnValue('dev-container');
     vi.mocked(execInPod)
-      .mockResolvedValueOnce({ stdout: '', stderr: "can't find session", exitCode: 1 }) // has-session: not found
+      .mockResolvedValueOnce({
+        stdout: '',
+        stderr: "can't find session",
+        exitCode: 1,
+      }) // has-session: not found
       .mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 }); // new-session + set-options
 
-    const { startTerminalSession } = await import('../../src/tools/start-terminal-session.js');
-    const result = await startTerminalSession({ workspace: 'my-workspace', session_name: 'custom' });
+    const { startTerminalSession } = await import(
+      '../../src/tools/start-terminal-session.js'
+    );
+    const result = await startTerminalSession({
+      workspace: 'my-workspace',
+      session_name: 'custom',
+    });
 
     expect(result.session_name).toBe('custom');
     expect(execInPod).toHaveBeenCalledWith(

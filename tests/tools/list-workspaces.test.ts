@@ -9,7 +9,9 @@ describe('listWorkspaces', () => {
   });
 
   it('returns workspace name, phase, url, and filtered annotations', async () => {
-    const { getCustomObjectsApi, getNamespace } = await import('../../src/kube/client.js');
+    const { getCustomObjectsApi, getNamespace } = await import(
+      '../../src/kube/client.js'
+    );
     const mockApi = {
       listNamespacedCustomObject: vi.fn().mockResolvedValue({
         items: [
@@ -33,7 +35,9 @@ describe('listWorkspaces', () => {
     vi.mocked(getCustomObjectsApi).mockReturnValue(mockApi as any);
     vi.mocked(getNamespace).mockReturnValue('test-namespace');
 
-    const { listWorkspaces } = await import('../../src/tools/list-workspaces.js');
+    const { listWorkspaces } = await import(
+      '../../src/tools/list-workspaces.js'
+    );
     const result = await listWorkspaces();
 
     expect(result.total).toBe(1);
@@ -53,7 +57,9 @@ describe('listWorkspaces', () => {
   });
 
   it('returns empty url when workspace status has no mainUrl', async () => {
-    const { getCustomObjectsApi, getNamespace } = await import('../../src/kube/client.js');
+    const { getCustomObjectsApi, getNamespace } = await import(
+      '../../src/kube/client.js'
+    );
     const mockApi = {
       listNamespacedCustomObject: vi.fn().mockResolvedValue({
         items: [
@@ -72,7 +78,9 @@ describe('listWorkspaces', () => {
     vi.mocked(getCustomObjectsApi).mockReturnValue(mockApi as any);
     vi.mocked(getNamespace).mockReturnValue('test-namespace');
 
-    const { listWorkspaces } = await import('../../src/tools/list-workspaces.js');
+    const { listWorkspaces } = await import(
+      '../../src/tools/list-workspaces.js'
+    );
     const result = await listWorkspaces();
 
     expect(result.total).toBe(1);
@@ -86,7 +94,9 @@ describe('listWorkspaces', () => {
   });
 
   it('returns empty items when no workspaces exist', async () => {
-    const { getCustomObjectsApi, getNamespace } = await import('../../src/kube/client.js');
+    const { getCustomObjectsApi, getNamespace } = await import(
+      '../../src/kube/client.js'
+    );
     const mockApi = {
       listNamespacedCustomObject: vi.fn().mockResolvedValue({
         items: [],
@@ -95,7 +105,9 @@ describe('listWorkspaces', () => {
     vi.mocked(getCustomObjectsApi).mockReturnValue(mockApi as any);
     vi.mocked(getNamespace).mockReturnValue('test-namespace');
 
-    const { listWorkspaces } = await import('../../src/tools/list-workspaces.js');
+    const { listWorkspaces } = await import(
+      '../../src/tools/list-workspaces.js'
+    );
     const result = await listWorkspaces();
 
     expect(result.items).toEqual([]);
@@ -105,7 +117,9 @@ describe('listWorkspaces', () => {
   });
 
   it('populates url from status.mainUrl when present', async () => {
-    const { getCustomObjectsApi, getNamespace } = await import('../../src/kube/client.js');
+    const { getCustomObjectsApi, getNamespace } = await import(
+      '../../src/kube/client.js'
+    );
     const mockApi = {
       listNamespacedCustomObject: vi.fn().mockResolvedValue({
         items: [
@@ -127,7 +141,9 @@ describe('listWorkspaces', () => {
     vi.mocked(getCustomObjectsApi).mockReturnValue(mockApi as any);
     vi.mocked(getNamespace).mockReturnValue('test-namespace');
 
-    const { listWorkspaces } = await import('../../src/tools/list-workspaces.js');
+    const { listWorkspaces } = await import(
+      '../../src/tools/list-workspaces.js'
+    );
     const result = await listWorkspaces();
 
     expect(result.items).toHaveLength(1);
@@ -136,7 +152,9 @@ describe('listWorkspaces', () => {
   });
 
   it('respects limit and offset for pagination', async () => {
-    const { getCustomObjectsApi, getNamespace } = await import('../../src/kube/client.js');
+    const { getCustomObjectsApi, getNamespace } = await import(
+      '../../src/kube/client.js'
+    );
     const items = Array.from({ length: 5 }, (_, i) => ({
       metadata: { name: `workspace-${i + 1}`, annotations: {} },
       status: { phase: 'Running', mainUrl: '' },
@@ -147,18 +165,25 @@ describe('listWorkspaces', () => {
     vi.mocked(getCustomObjectsApi).mockReturnValue(mockApi as any);
     vi.mocked(getNamespace).mockReturnValue('test-namespace');
 
-    const { listWorkspaces } = await import('../../src/tools/list-workspaces.js');
+    const { listWorkspaces } = await import(
+      '../../src/tools/list-workspaces.js'
+    );
     const result = await listWorkspaces({ limit: 2, offset: 1 });
 
     expect(result.total).toBe(5);
     expect(result.count).toBe(2);
     expect(result.offset).toBe(1);
     expect(result.has_more).toBe(true);
-    expect(result.items.map(w => w.name)).toEqual(['workspace-2', 'workspace-3']);
+    expect(result.items.map((w) => w.name)).toEqual([
+      'workspace-2',
+      'workspace-3',
+    ]);
   });
 
   it('has_more is false when last page is reached', async () => {
-    const { getCustomObjectsApi, getNamespace } = await import('../../src/kube/client.js');
+    const { getCustomObjectsApi, getNamespace } = await import(
+      '../../src/kube/client.js'
+    );
     const items = Array.from({ length: 3 }, (_, i) => ({
       metadata: { name: `workspace-${i + 1}`, annotations: {} },
       status: { phase: 'Running', mainUrl: '' },
@@ -169,7 +194,9 @@ describe('listWorkspaces', () => {
     vi.mocked(getCustomObjectsApi).mockReturnValue(mockApi as any);
     vi.mocked(getNamespace).mockReturnValue('test-namespace');
 
-    const { listWorkspaces } = await import('../../src/tools/list-workspaces.js');
+    const { listWorkspaces } = await import(
+      '../../src/tools/list-workspaces.js'
+    );
     const result = await listWorkspaces({ limit: 2, offset: 2 });
 
     expect(result.total).toBe(3);

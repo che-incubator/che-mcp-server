@@ -8,7 +8,8 @@ let customObjectsApi: k8s.CustomObjectsApi;
 let coreV1Api: k8s.CoreV1Api;
 
 const NAMESPACE_SUFFIXES = ['-che', '-devspaces'];
-const SA_NAMESPACE_PATH = '/var/run/secrets/kubernetes.io/serviceaccount/namespace';
+const SA_NAMESPACE_PATH =
+  '/var/run/secrets/kubernetes.io/serviceaccount/namespace';
 
 export async function initKubeClient(): Promise<void> {
   kubeConfig = new k8s.KubeConfig();
@@ -18,9 +19,7 @@ export async function initKubeClient(): Promise<void> {
   coreV1Api = kubeConfig.makeApiClient(k8s.CoreV1Api);
 
   const context = kubeConfig.getContextObject(kubeConfig.getCurrentContext());
-  namespace = context?.namespace
-    || process.env.CHE_MCP_NAMESPACE
-    || '';
+  namespace = context?.namespace || process.env.CHE_MCP_NAMESPACE || '';
 
   if (!namespace) {
     try {
@@ -36,7 +35,7 @@ export async function initKubeClient(): Promise<void> {
 
   if (!namespace) {
     throw new Error(
-      'Cannot determine namespace. Set namespace in kubeconfig context or CHE_MCP_NAMESPACE env var.'
+      'Cannot determine namespace. Set namespace in kubeconfig context or CHE_MCP_NAMESPACE env var.',
     );
   }
 }
@@ -44,7 +43,10 @@ export async function initKubeClient(): Promise<void> {
 async function detectNamespace(): Promise<string> {
   let username: string;
   try {
-    username = execFileSync('oc', ['whoami'], { timeout: 5000, encoding: 'utf-8' }).trim();
+    username = execFileSync('oc', ['whoami'], {
+      timeout: 5000,
+      encoding: 'utf-8',
+    }).trim();
   } catch {
     return '';
   }

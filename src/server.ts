@@ -18,7 +18,11 @@ export async function startHttpServer(port: number): Promise<http.Server> {
     }
 
     if (url.pathname === '/mcp') {
-      if (req.method === 'POST' || req.method === 'GET' || req.method === 'DELETE') {
+      if (
+        req.method === 'POST' ||
+        req.method === 'GET' ||
+        req.method === 'DELETE'
+      ) {
         await handleMcpRequest(req, res);
       } else {
         res.writeHead(405).end('Method Not Allowed');
@@ -40,7 +44,9 @@ async function handleMcpRequest(
   res: http.ServerResponse,
 ): Promise<void> {
   const sessionId = req.headers['mcp-session-id'] as string | undefined;
-  console.log(`[mcp] ${req.method} sessionId=${sessionId ?? '(none)'} activeSessions=${transports.size}`);
+  console.log(
+    `[mcp] ${req.method} sessionId=${sessionId ?? '(none)'} activeSessions=${transports.size}`,
+  );
 
   // Parse body for POST requests (needed for both existing and new sessions)
   let parsedBody: unknown;
@@ -50,11 +56,13 @@ async function handleMcpRequest(
       parsedBody = JSON.parse(body);
     } catch {
       res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({
-        jsonrpc: '2.0',
-        error: { code: -32700, message: 'Parse error' },
-        id: null,
-      }));
+      res.end(
+        JSON.stringify({
+          jsonrpc: '2.0',
+          error: { code: -32700, message: 'Parse error' },
+          id: null,
+        }),
+      );
       return;
     }
     normalizeToolCallArguments(parsedBody);
@@ -94,21 +102,33 @@ async function handleMcpRequest(
   if (sessionId) {
     console.log(`[mcp] 404: unknown sessionId=${sessionId}`);
     res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({
-      jsonrpc: '2.0',
-      error: { code: -32000, message: 'Session not found. Please re-initialize.' },
-      id: null,
-    }));
+    res.end(
+      JSON.stringify({
+        jsonrpc: '2.0',
+        error: {
+          code: -32000,
+          message: 'Session not found. Please re-initialize.',
+        },
+        id: null,
+      }),
+    );
     return;
   }
 
-  console.log(`[mcp] 400: method=${req.method} no session, not an initialize request`);
+  console.log(
+    `[mcp] 400: method=${req.method} no session, not an initialize request`,
+  );
   res.writeHead(400, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify({
-    jsonrpc: '2.0',
-    error: { code: -32000, message: 'Bad Request: No valid session ID provided' },
-    id: null,
-  }));
+  res.end(
+    JSON.stringify({
+      jsonrpc: '2.0',
+      error: {
+        code: -32000,
+        message: 'Bad Request: No valid session ID provided',
+      },
+      id: null,
+    }),
+  );
 }
 
 // Some MCP clients send arguments: null for tools with no parameters.
@@ -117,9 +137,12 @@ function normalizeToolCallArguments(body: unknown): void {
   const messages = Array.isArray(body) ? body : [body];
   for (const msg of messages) {
     if (
-      msg && typeof msg === 'object' &&
-      'method' in msg && (msg as any).method === 'tools/call' &&
-      'params' in msg && (msg as any).params &&
+      msg &&
+      typeof msg === 'object' &&
+      'method' in msg &&
+      (msg as any).method === 'tools/call' &&
+      'params' in msg &&
+      (msg as any).params &&
       (msg as any).params.arguments === null
     ) {
       (msg as any).params.arguments = {};

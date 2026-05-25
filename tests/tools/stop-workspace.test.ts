@@ -8,7 +8,9 @@ describe('stopWorkspace', () => {
   });
 
   it('patches workspace to started: false', async () => {
-    const { getCustomObjectsApi, getNamespace } = await import('../../src/kube/client.js');
+    const { getCustomObjectsApi, getNamespace } = await import(
+      '../../src/kube/client.js'
+    );
     const mockApi = {
       patchNamespacedCustomObject: vi.fn().mockResolvedValue({}),
     };

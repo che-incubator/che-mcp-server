@@ -4,7 +4,9 @@ interface StartWorkspaceParams {
   workspace: string;
 }
 
-export async function startWorkspace(params: StartWorkspaceParams): Promise<{ name: string; started: boolean }> {
+export async function startWorkspace(
+  params: StartWorkspaceParams,
+): Promise<{ name: string; started: boolean }> {
   const api = getCustomObjectsApi();
   const namespace = getNamespace();
 

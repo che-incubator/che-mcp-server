@@ -17,7 +17,9 @@ describe('findPodForWorkspace', () => {
   });
 
   it('returns pod name and container list for a matching Running pod', async () => {
-    const { getCoreV1Api, getNamespace } = await import('../../src/kube/client.js');
+    const { getCoreV1Api, getNamespace } = await import(
+      '../../src/kube/client.js'
+    );
 
     const mockPodList = {
       items: [
@@ -53,7 +55,9 @@ describe('findPodForWorkspace', () => {
   });
 
   it('throws WorkspaceNotReadyError with phase when no running pod found', async () => {
-    const { getCoreV1Api, getCustomObjectsApi, getNamespace } = await import('../../src/kube/client.js');
+    const { getCoreV1Api, getCustomObjectsApi, getNamespace } = await import(
+      '../../src/kube/client.js'
+    );
 
     const mockPodList = {
       items: [
@@ -77,31 +81,47 @@ describe('findPodForWorkspace', () => {
     } as any);
     vi.mocked(getNamespace).mockReturnValue('test-namespace');
 
-    const { findPodForWorkspace, WorkspaceNotReadyError } = await import('../../src/kube/exec.js');
-    await expect(findPodForWorkspace('my-workspace')).rejects.toThrow(WorkspaceNotReadyError);
-    await expect(findPodForWorkspace('my-workspace')).rejects.toThrow('is starting');
+    const { findPodForWorkspace, WorkspaceNotReadyError } = await import(
+      '../../src/kube/exec.js'
+    );
+    await expect(findPodForWorkspace('my-workspace')).rejects.toThrow(
+      WorkspaceNotReadyError,
+    );
+    await expect(findPodForWorkspace('my-workspace')).rejects.toThrow(
+      'is starting',
+    );
   });
 
   it('throws with "not found" when workspace does not exist', async () => {
-    const { getCoreV1Api, getCustomObjectsApi, getNamespace } = await import('../../src/kube/client.js');
+    const { getCoreV1Api, getCustomObjectsApi, getNamespace } = await import(
+      '../../src/kube/client.js'
+    );
 
     vi.mocked(getCoreV1Api).mockReturnValue({
       listNamespacedPod: vi.fn().mockResolvedValue({ items: [] }),
     } as any);
     vi.mocked(getCustomObjectsApi).mockReturnValue({
-      getNamespacedCustomObject: vi.fn().mockRejectedValue(new Error('not found')),
+      getNamespacedCustomObject: vi
+        .fn()
+        .mockRejectedValue(new Error('not found')),
     } as any);
     vi.mocked(getNamespace).mockReturnValue('test-namespace');
 
     const { findPodForWorkspace } = await import('../../src/kube/exec.js');
-    await expect(findPodForWorkspace('my-workspace')).rejects.toThrow('not found');
+    await expect(findPodForWorkspace('my-workspace')).rejects.toThrow(
+      'not found',
+    );
   });
 });
 
 describe('selectContainer', () => {
   it('picks first non-che-gateway container', async () => {
     const { selectContainer } = await import('../../src/kube/exec.js');
-    const result = selectContainer([CHE_GATEWAY_CONTAINER, 'dev-container', 'sidecar']);
+    const result = selectContainer([
+      CHE_GATEWAY_CONTAINER,
+      'dev-container',
+      'sidecar',
+    ]);
     expect(result).toBe('dev-container');
   });
 
@@ -113,7 +133,9 @@ describe('selectContainer', () => {
 
   it('throws when explicit container not found', async () => {
     const { selectContainer } = await import('../../src/kube/exec.js');
-    expect(() => selectContainer(['dev-container', 'sidecar'], 'missing')).toThrow(
+    expect(() =>
+      selectContainer(['dev-container', 'sidecar'], 'missing'),
+    ).toThrow(
       'Container "missing" not found. Available: dev-container, sidecar',
     );
   });

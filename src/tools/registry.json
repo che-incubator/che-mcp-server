@@ -28,13 +28,17 @@
               "args": ["/usr/local/bin/opencode", "/injected-tools/opencode"],
               "memoryLimit": "128Mi",
               "mountSources": false,
-              "volumeMounts": [{ "name": "injected-tools", "path": "/injected-tools" }]
+              "volumeMounts": [
+                { "name": "injected-tools", "path": "/injected-tools" }
+              ]
             }
           }
         }
       ],
       "editor": {
-        "volumeMounts": [{ "name": "injected-tools", "path": "/injected-tools" }],
+        "volumeMounts": [
+          { "name": "injected-tools", "path": "/injected-tools" }
+        ],
         "env": [],
         "postStart": ""
       }
@@ -56,13 +60,17 @@
               "args": ["/usr/local/bin/goose", "/injected-tools/goose"],
               "memoryLimit": "128Mi",
               "mountSources": false,
-              "volumeMounts": [{ "name": "injected-tools", "path": "/injected-tools" }]
+              "volumeMounts": [
+                { "name": "injected-tools", "path": "/injected-tools" }
+              ]
             }
           }
         }
       ],
       "editor": {
-        "volumeMounts": [{ "name": "injected-tools", "path": "/injected-tools" }],
+        "volumeMounts": [
+          { "name": "injected-tools", "path": "/injected-tools" }
+        ],
         "env": [],
         "postStart": ""
       }
@@ -84,14 +92,20 @@
               "args": ["/usr/local/bin/claude", "/injected-tools/claude"],
               "memoryLimit": "128Mi",
               "mountSources": false,
-              "volumeMounts": [{ "name": "injected-tools", "path": "/injected-tools" }]
+              "volumeMounts": [
+                { "name": "injected-tools", "path": "/injected-tools" }
+              ]
             }
           }
         }
       ],
       "editor": {
-        "volumeMounts": [{ "name": "injected-tools", "path": "/injected-tools" }],
-        "env": [{ "name": "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC", "value": "1" }],
+        "volumeMounts": [
+          { "name": "injected-tools", "path": "/injected-tools" }
+        ],
+        "env": [
+          { "name": "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC", "value": "1" }
+        ],
         "memoryLimit": "1024Mi",
         "postStart": ""
       }
@@ -113,13 +127,17 @@
               "args": ["-c", "cp -a /opt/kilocode/. /injected-tools/kilocode/"],
               "memoryLimit": "256Mi",
               "mountSources": false,
-              "volumeMounts": [{ "name": "injected-tools", "path": "/injected-tools" }]
+              "volumeMounts": [
+                { "name": "injected-tools", "path": "/injected-tools" }
+              ]
             }
           }
         }
       ],
       "editor": {
-        "volumeMounts": [{ "name": "injected-tools", "path": "/injected-tools" }],
+        "volumeMounts": [
+          { "name": "injected-tools", "path": "/injected-tools" }
+        ],
         "env": [],
         "postStart": ""
       }
@@ -138,16 +156,23 @@
             "container": {
               "image": "quay.io/che-incubator/tools-injector/gemini-cli:next",
               "command": ["/bin/sh"],
-              "args": ["-c", "cp -a /opt/gemini-cli/. /injected-tools/gemini-cli/"],
+              "args": [
+                "-c",
+                "cp -a /opt/gemini-cli/. /injected-tools/gemini-cli/"
+              ],
               "memoryLimit": "256Mi",
               "mountSources": false,
-              "volumeMounts": [{ "name": "injected-tools", "path": "/injected-tools" }]
+              "volumeMounts": [
+                { "name": "injected-tools", "path": "/injected-tools" }
+              ]
             }
           }
         }
       ],
       "editor": {
-        "volumeMounts": [{ "name": "injected-tools", "path": "/injected-tools" }],
+        "volumeMounts": [
+          { "name": "injected-tools", "path": "/injected-tools" }
+        ],
         "env": [{ "name": "GEMINI_CLI_HOME", "value": "/tmp/gemini-home" }],
         "postStart": "mkdir -p /tmp/gemini-home/.gemini && echo '{\"projects\":{}}' > /tmp/gemini-home/.gemini/projects.json"
       }
@@ -169,13 +194,17 @@
               "args": ["/usr/local/bin/tmux", "/injected-tools/tmux"],
               "memoryLimit": "128Mi",
               "mountSources": false,
-              "volumeMounts": [{ "name": "injected-tools", "path": "/injected-tools" }]
+              "volumeMounts": [
+                { "name": "injected-tools", "path": "/injected-tools" }
+              ]
             }
           }
         }
       ],
       "editor": {
-        "volumeMounts": [{ "name": "injected-tools", "path": "/injected-tools" }],
+        "volumeMounts": [
+          { "name": "injected-tools", "path": "/injected-tools" }
+        ],
         "env": [],
         "postStart": ""
       }
@@ -197,13 +226,17 @@
               "args": ["/usr/local/bin/python3", "/injected-tools/python3"],
               "memoryLimit": "128Mi",
               "mountSources": false,
-              "volumeMounts": [{ "name": "injected-tools", "path": "/injected-tools" }]
+              "volumeMounts": [
+                { "name": "injected-tools", "path": "/injected-tools" }
+              ]
             }
           }
         }
       ],
       "editor": {
-        "volumeMounts": [{ "name": "injected-tools", "path": "/injected-tools" }],
+        "volumeMounts": [
+          { "name": "injected-tools", "path": "/injected-tools" }
+        ],
         "env": [],
         "postStart": ""
       }

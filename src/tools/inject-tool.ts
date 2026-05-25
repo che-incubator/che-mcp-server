@@ -1,4 +1,7 @@
-import { validateTool, injectToolIntoWorkspace } from '../orchestrator/tool-injector.js';
+import {
+  validateTool,
+  injectToolIntoWorkspace,
+} from '../orchestrator/tool-injector.js';
 
 interface InjectToolParams {
   workspace: string;

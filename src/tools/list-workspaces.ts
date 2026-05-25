@@ -15,7 +15,9 @@ interface ListWorkspacesResult {
   has_more: boolean;
 }
 
-export async function listWorkspaces(params: ListWorkspacesParams = {}): Promise<ListWorkspacesResult> {
+export async function listWorkspaces(
+  params: ListWorkspacesParams = {},
+): Promise<ListWorkspacesResult> {
   const api = getCustomObjectsApi();
   const namespace = getNamespace();
 
@@ -33,7 +35,8 @@ export async function listWorkspaces(params: ListWorkspacesParams = {}): Promise
   const page = allItems.slice(offset, offset + limit);
 
   const items = page.map((dw: any) => {
-    const allAnnotations: Record<string, string> = dw.metadata?.annotations || {};
+    const allAnnotations: Record<string, string> =
+      dw.metadata?.annotations || {};
     const agentAnnotations: Record<string, string> = {};
     for (const [key, value] of Object.entries(allAnnotations)) {
       if (key.startsWith(AGENT_ANNOTATION_PREFIX)) {
@@ -48,5 +51,11 @@ export async function listWorkspaces(params: ListWorkspacesParams = {}): Promise
     };
   });
 
-  return { items, total, count: items.length, offset, has_more: offset + limit < total };
+  return {
+    items,
+    total,
+    count: items.length,
+    offset,
+    has_more: offset + limit < total,
+  };
 }

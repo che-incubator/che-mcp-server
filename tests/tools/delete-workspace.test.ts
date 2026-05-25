@@ -8,14 +8,18 @@ describe('deleteWorkspace', () => {
   });
 
   it('deletes the DevWorkspace custom resource', async () => {
-    const { getCustomObjectsApi, getNamespace } = await import('../../src/kube/client.js');
+    const { getCustomObjectsApi, getNamespace } = await import(
+      '../../src/kube/client.js'
+    );
     const mockApi = {
       deleteNamespacedCustomObject: vi.fn().mockResolvedValue({}),
     };
     vi.mocked(getCustomObjectsApi).mockReturnValue(mockApi as any);
     vi.mocked(getNamespace).mockReturnValue('test-namespace');
 
-    const { deleteWorkspace } = await import('../../src/tools/delete-workspace.js');
+    const { deleteWorkspace } = await import(
+      '../../src/tools/delete-workspace.js'
+    );
     const result = await deleteWorkspace({ workspace: 'my-workspace' });
 
     expect(result).toEqual({ name: 'my-workspace', deleted: true });

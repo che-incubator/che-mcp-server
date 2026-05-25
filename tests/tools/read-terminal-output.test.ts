@@ -9,7 +9,9 @@ describe('readTerminalOutput', () => {
   });
 
   it('returns captured pane output as plain text', async () => {
-    const { findPodForWorkspace, selectContainer, execInPod } = await import('../../src/kube/exec.js');
+    const { findPodForWorkspace, selectContainer, execInPod } = await import(
+      '../../src/kube/exec.js'
+    );
 
     vi.mocked(findPodForWorkspace).mockResolvedValue({
       podName: 'workspace-pod-123',
@@ -22,7 +24,9 @@ describe('readTerminalOutput', () => {
       exitCode: 0,
     });
 
-    const { readTerminalOutput } = await import('../../src/tools/read-terminal-output.js');
+    const { readTerminalOutput } = await import(
+      '../../src/tools/read-terminal-output.js'
+    );
     const result = await readTerminalOutput({
       workspace: 'my-workspace',
     });
@@ -37,7 +41,9 @@ describe('readTerminalOutput', () => {
   });
 
   it('lines_returned reflects actual line count (not requested count)', async () => {
-    const { findPodForWorkspace, selectContainer, execInPod } = await import('../../src/kube/exec.js');
+    const { findPodForWorkspace, selectContainer, execInPod } = await import(
+      '../../src/kube/exec.js'
+    );
 
     vi.mocked(findPodForWorkspace).mockResolvedValue({
       podName: 'workspace-pod-123',
@@ -46,12 +52,15 @@ describe('readTerminalOutput', () => {
     vi.mocked(selectContainer).mockReturnValue('dev-container');
     // Only 10 lines returned even though 50 requested
     vi.mocked(execInPod).mockResolvedValue({
-      stdout: 'line1\nline2\nline3\nline4\nline5\nline6\nline7\nline8\nline9\nline10\n',
+      stdout:
+        'line1\nline2\nline3\nline4\nline5\nline6\nline7\nline8\nline9\nline10\n',
       stderr: '',
       exitCode: 0,
     });
 
-    const { readTerminalOutput } = await import('../../src/tools/read-terminal-output.js');
+    const { readTerminalOutput } = await import(
+      '../../src/tools/read-terminal-output.js'
+    );
     const result = await readTerminalOutput({
       workspace: 'my-workspace',
       lines: 50,
@@ -61,7 +70,9 @@ describe('readTerminalOutput', () => {
   });
 
   it('uses default 50 lines when not specified', async () => {
-    const { findPodForWorkspace, selectContainer, execInPod } = await import('../../src/kube/exec.js');
+    const { findPodForWorkspace, selectContainer, execInPod } = await import(
+      '../../src/kube/exec.js'
+    );
 
     vi.mocked(findPodForWorkspace).mockResolvedValue({
       podName: 'workspace-pod-123',
@@ -74,7 +85,9 @@ describe('readTerminalOutput', () => {
       exitCode: 0,
     });
 
-    const { readTerminalOutput } = await import('../../src/tools/read-terminal-output.js');
+    const { readTerminalOutput } = await import(
+      '../../src/tools/read-terminal-output.js'
+    );
     await readTerminalOutput({
       workspace: 'my-workspace',
     });
@@ -87,7 +100,9 @@ describe('readTerminalOutput', () => {
   });
 
   it('returns error when session does not exist', async () => {
-    const { findPodForWorkspace, selectContainer, execInPod } = await import('../../src/kube/exec.js');
+    const { findPodForWorkspace, selectContainer, execInPod } = await import(
+      '../../src/kube/exec.js'
+    );
 
     vi.mocked(findPodForWorkspace).mockResolvedValue({
       podName: 'workspace-pod-123',
@@ -100,7 +115,9 @@ describe('readTerminalOutput', () => {
       exitCode: 1,
     });
 
-    const { readTerminalOutput } = await import('../../src/tools/read-terminal-output.js');
+    const { readTerminalOutput } = await import(
+      '../../src/tools/read-terminal-output.js'
+    );
     await expect(
       readTerminalOutput({
         workspace: 'my-workspace',

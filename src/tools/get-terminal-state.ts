@@ -1,4 +1,8 @@
-import { findPodForWorkspace, selectContainer, execInPod } from '../kube/exec.js';
+import {
+  findPodForWorkspace,
+  selectContainer,
+  execInPod,
+} from '../kube/exec.js';
 import { DEFAULT_SESSION_NAME, AgentState } from '../types.js';
 
 interface GetTerminalStateParams {
@@ -7,14 +11,21 @@ interface GetTerminalStateParams {
   container?: string;
 }
 
-export async function getTerminalState(params: GetTerminalStateParams): Promise<AgentState> {
+export async function getTerminalState(
+  params: GetTerminalStateParams,
+): Promise<AgentState> {
   const sessionName = params.session_name || DEFAULT_SESSION_NAME;
 
   const { podName, containers } = await findPodForWorkspace(params.workspace);
   const containerName = selectContainer(containers, params.container);
 
   const result = await execInPod(podName, containerName, [
-    'tmux', 'list-panes', '-t', sessionName, '-F', '#{pane_pid} #{pane_dead} #{pane_current_command} #{pane_dead_status}',
+    'tmux',
+    'list-panes',
+    '-t',
+    sessionName,
+    '-F',
+    '#{pane_pid} #{pane_dead} #{pane_current_command} #{pane_dead_status}',
   ]);
 
   // If exec fails, session doesn't exist
@@ -34,7 +45,7 @@ export async function getTerminalState(params: GetTerminalStateParams): Promise<
 
   return {
     session_alive: true,
-    process_running: paneCurrentCommand !== "bash",
+    process_running: paneCurrentCommand !== 'bash',
     exit_code: paneDead === '0' ? null : parseInt(paneDeadStatus, 10),
-  }
+  };
 }

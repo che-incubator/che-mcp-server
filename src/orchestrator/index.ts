@@ -6,11 +6,19 @@ import { readTerminalOutput } from '../tools/read-terminal-output.js';
 import { getTerminalState } from '../tools/get-terminal-state.js';
 import { stopTerminalSession } from '../tools/stop-terminal-session.js';
 import { listWorkspaces } from '../tools/list-workspaces.js';
-import { readAgentAnnotations, writeAgentAnnotations, clearAgentAnnotations } from '../kube/annotations.js';
+import {
+  readAgentAnnotations,
+  writeAgentAnnotations,
+  clearAgentAnnotations,
+} from '../kube/annotations.js';
 import { getBackendEntry, DEFAULT_AGENT_TYPE } from './backend-registry.js';
 import { buildLaunchContext } from './launch-context.js';
 import type { AgentStatus, AgentPhase } from '../types.js';
-import { DEFAULT_SESSION_NAME, AGENT_TASK_MAX_BYTES, WORKSPACE_START_TIMEOUT_MS } from '../types.js';
+import {
+  DEFAULT_SESSION_NAME,
+  AGENT_TASK_MAX_BYTES,
+  WORKSPACE_START_TIMEOUT_MS,
+} from '../types.js';
 import type { AgentAnnotationValues } from '../kube/annotations.js';
 
 export async function launchCodingAgent(params: {
@@ -32,20 +40,23 @@ export async function launchCodingAgent(params: {
   if (!toolsInstalled.includes(backend.required_tool)) {
     throw new Error(
       `Workspace "${workspace}" does not have ${backend.required_tool} installed.\n` +
-      `Options:\n` +
-      `- Inject now (requires workspace restart): inject_tool(workspace='${workspace}', tool='${backend.required_tool}')\n` +
-      `- Create a new workspace with it: create_workspace(tools=['tmux', '${backend.required_tool}'])`
+        `Options:\n` +
+        `- Inject now (requires workspace restart): inject_tool(workspace='${workspace}', tool='${backend.required_tool}')\n` +
+        `- Create a new workspace with it: create_workspace(tools=['tmux', '${backend.required_tool}'])`,
     );
   }
 
   // 3. Guard against double-launch
   const existing = await readAgentAnnotations(workspace);
   if (existing.session) {
-    const state = await getTerminalState({ workspace, session_name: existing.session });
+    const state = await getTerminalState({
+      workspace,
+      session_name: existing.session,
+    });
     if (state.session_alive) {
       throw new Error(
         `Workspace "${workspace}" already has a running agent session.\n` +
-        `Use get_agent_status('${workspace}') to check it, or stop_agent('${workspace}') first.`
+          `Use get_agent_status('${workspace}') to check it, or stop_agent('${workspace}') first.`,
       );
     }
   }
@@ -78,7 +89,9 @@ export async function launchCodingAgent(params: {
   return { status: 'launched', workspace, session: DEFAULT_SESSION_NAME };
 }
 
-export async function getAgentStatus(params: { workspace: string }): Promise<AgentStatus> {
+export async function getAgentStatus(params: {
+  workspace: string;
+}): Promise<AgentStatus> {
   const { workspace } = params;
   const ann = await readAgentAnnotations(workspace);
 
@@ -86,23 +99,39 @@ export async function getAgentStatus(params: { workspace: string }): Promise<Age
     return makeStatus(workspace, 'idle', ann, null, null, null);
   }
 
-  const state = await getTerminalState({ workspace, session_name: ann.session });
+  const state = await getTerminalState({
+    workspace,
+    session_name: ann.session,
+  });
 
   if (!state.session_alive) {
     return makeStatus(workspace, 'lost', ann, null, null, null);
   }
 
-  const { output } = await readTerminalOutput({ workspace, session_name: ann.session, lines: 20 });
+  const { output } = await readTerminalOutput({
+    workspace,
+    session_name: ann.session,
+    lines: 20,
+  });
   const ttydUrl = await getTtydUrl(workspace);
 
   if (state.process_running) {
     return makeStatus(workspace, 'running', ann, null, output, ttydUrl);
   }
 
-  return makeStatus(workspace, 'finished', ann, state.exit_code, output, ttydUrl);
+  return makeStatus(
+    workspace,
+    'finished',
+    ann,
+    state.exit_code,
+    output,
+    ttydUrl,
+  );
 }
 
-export async function listAllAgents(params: { limit?: number; offset?: number } = {}): Promise<{
+export async function listAllAgents(
+  params: { limit?: number; offset?: number } = {},
+): Promise<{
   items: AgentStatus[];
   total: number;
   count: number;
@@ -112,22 +141,30 @@ export async function listAllAgents(params: { limit?: number; offset?: number } 
   // Fetch all workspaces (no pagination — we need the full list to filter by annotation)
   const { items: allWorkspaces } = await listWorkspaces({ limit: 10000 });
   const withSession = allWorkspaces.filter(
-    w => w.annotations['che.eclipse.org/agent-session'],
+    (w) => w.annotations['che.eclipse.org/agent-session'],
   );
 
   const results = await Promise.allSettled(
-    withSession.map(w => getAgentStatus({ workspace: w.name })),
+    withSession.map((w) => getAgentStatus({ workspace: w.name })),
   );
 
   const allAgents = results
-    .filter((r): r is PromiseFulfilledResult<AgentStatus> => r.status === 'fulfilled')
-    .map(r => r.value);
+    .filter(
+      (r): r is PromiseFulfilledResult<AgentStatus> => r.status === 'fulfilled',
+    )
+    .map((r) => r.value);
 
   const total = allAgents.length;
   const offset = params.offset ?? 0;
   const limit = params.limit ?? 50;
   const items = allAgents.slice(offset, offset + limit);
-  return { items, total, count: items.length, offset, has_more: offset + limit < total };
+  return {
+    items,
+    total,
+    count: items.length,
+    offset,
+    has_more: offset + limit < total,
+  };
 }
 
 export async function sendMessageToAgent(params: {
@@ -136,7 +173,9 @@ export async function sendMessageToAgent(params: {
 }): Promise<{ acknowledged: boolean }> {
   const ann = await readAgentAnnotations(params.workspace);
   if (!ann.session) {
-    throw new Error(`No active agent session in workspace "${params.workspace}".`);
+    throw new Error(
+      `No active agent session in workspace "${params.workspace}".`,
+    );
   }
   await sendTerminalInput({
     workspace: params.workspace,
@@ -153,7 +192,9 @@ export async function getAgentOutput(params: {
 }): Promise<{ output: string; lines_returned: number }> {
   const ann = await readAgentAnnotations(params.workspace);
   if (!ann.session) {
-    throw new Error(`No active agent session in workspace "${params.workspace}".`);
+    throw new Error(
+      `No active agent session in workspace "${params.workspace}".`,
+    );
   }
   return readTerminalOutput({
     workspace: params.workspace,
@@ -172,9 +213,20 @@ export async function stopAgent(params: { workspace: string }): Promise<{
   let summary: string | null = null;
   if (ann.session) {
     try {
-      const { output } = await readTerminalOutput({ workspace, session_name: ann.session, lines: 50 });
-      const state = await getTerminalState({ workspace, session_name: ann.session });
-      summary = buildStopSummary({ output, exitCode: state.exit_code, task: ann.task });
+      const { output } = await readTerminalOutput({
+        workspace,
+        session_name: ann.session,
+        lines: 50,
+      });
+      const state = await getTerminalState({
+        workspace,
+        session_name: ann.session,
+      });
+      summary = buildStopSummary({
+        output,
+        exitCode: state.exit_code,
+        task: ann.task,
+      });
       await stopTerminalSession({ workspace, session_name: ann.session });
     } catch {
       // session may already be gone
@@ -201,7 +253,7 @@ async function ensureWorkspaceRunning(workspace: string): Promise<void> {
     }
     if (Date.now() > deadline) {
       throw new Error(
-        `Workspace "${workspace}" did not reach Running state within ${WORKSPACE_START_TIMEOUT_MS / 1000}s.`
+        `Workspace "${workspace}" did not reach Running state within ${WORKSPACE_START_TIMEOUT_MS / 1000}s.`,
       );
     }
     await sleep(3000);
@@ -211,8 +263,8 @@ async function ensureWorkspaceRunning(workspace: string): Promise<void> {
 function parseInstalledTools(annotations: Record<string, string>): string[] {
   const prefix = 'che.eclipse.org/tools-injector.';
   return Object.keys(annotations)
-    .filter(k => k.startsWith(prefix))
-    .map(k => k.slice(prefix.length));
+    .filter((k) => k.startsWith(prefix))
+    .map((k) => k.slice(prefix.length));
 }
 
 async function getTtydUrl(workspace: string): Promise<string | null> {
@@ -251,9 +303,10 @@ function buildStopSummary(params: {
 }): string {
   const lines = params.output.trim().split('\n');
   const excerpt = lines.slice(-10).join('\n');
-  const exitStr = params.exitCode !== null
-    ? `Exit code: ${params.exitCode}`
-    : 'Still running (force stopped)';
+  const exitStr =
+    params.exitCode !== null
+      ? `Exit code: ${params.exitCode}`
+      : 'Still running (force stopped)';
   return [
     `Task: ${params.task ?? '(unknown)'}`,
     exitStr,
@@ -262,5 +315,5 @@ function buildStopSummary(params: {
 }
 
 function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

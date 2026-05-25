@@ -9,7 +9,9 @@ describe('getWorkspacePod', () => {
   });
 
   it('returns pod details with container statuses', async () => {
-    const { getCoreV1Api, getNamespace } = await import('../../src/kube/client.js');
+    const { getCoreV1Api, getNamespace } = await import(
+      '../../src/kube/client.js'
+    );
     const { findPodForWorkspace } = await import('../../src/kube/exec.js');
 
     vi.mocked(findPodForWorkspace).mockResolvedValue({
@@ -31,7 +33,9 @@ describe('getWorkspacePod', () => {
     vi.mocked(getCoreV1Api).mockReturnValue(mockCoreApi as any);
     vi.mocked(getNamespace).mockReturnValue('test-namespace');
 
-    const { getWorkspacePod } = await import('../../src/tools/get-workspace-pod.js');
+    const { getWorkspacePod } = await import(
+      '../../src/tools/get-workspace-pod.js'
+    );
     const result = await getWorkspacePod({ workspace: 'my-workspace' });
 
     expect(result).toEqual({
@@ -51,7 +55,9 @@ describe('getWorkspacePod', () => {
   });
 
   it('returns empty containers when containerStatuses is missing', async () => {
-    const { getCoreV1Api, getNamespace } = await import('../../src/kube/client.js');
+    const { getCoreV1Api, getNamespace } = await import(
+      '../../src/kube/client.js'
+    );
     const { findPodForWorkspace } = await import('../../src/kube/exec.js');
 
     vi.mocked(findPodForWorkspace).mockResolvedValue({
@@ -69,7 +75,9 @@ describe('getWorkspacePod', () => {
     vi.mocked(getCoreV1Api).mockReturnValue(mockCoreApi as any);
     vi.mocked(getNamespace).mockReturnValue('test-namespace');
 
-    const { getWorkspacePod } = await import('../../src/tools/get-workspace-pod.js');
+    const { getWorkspacePod } = await import(
+      '../../src/tools/get-workspace-pod.js'
+    );
     const result = await getWorkspacePod({ workspace: 'my-workspace' });
 
     expect(result).toEqual({
