@@ -306,11 +306,15 @@ export function createMcpServer(mode: ServerMode = 'orchestration'): McpServer {
   server.tool(
     'get_agent_status',
     'Get the current status of a coding agent in a workspace: phase (running/finished/lost/idle), last output excerpt, and ttyd URL for direct terminal access. To see all agents across all workspaces, use list_all_agents.',
-    { workspace: z.string().describe('DevWorkspace name') },
+    {
+      workspace: z.string().describe('DevWorkspace name'),
+      session_id: z.string().optional()
+        .describe('Agent session ID. Required when multiple sessions exist in the workspace.'),
+    },
     { readOnlyHint: true },
-    async ({ workspace }) => {
+    async ({ workspace, session_id }) => {
       try {
-        const result = await getAgentStatusTool({ workspace });
+        const result = await getAgentStatusTool({ workspace, session_id });
         return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       } catch (error) {
         return toolError(error, 'Use list_workspaces to verify the workspace name.');
@@ -343,11 +347,13 @@ export function createMcpServer(mode: ServerMode = 'orchestration'): McpServer {
     "Send a message or instruction to a running coding agent. The agent receives it as terminal input. Use get_agent_status first to confirm the agent is in 'running' phase.",
     {
       workspace: z.string().describe('DevWorkspace name'),
+      session_id: z.string().optional()
+        .describe('Agent session ID. Required when multiple sessions exist in the workspace.'),
       message: z.string().describe('Message or instruction to send to the agent'),
     },
-    async ({ workspace, message }) => {
+    async ({ workspace, session_id, message }) => {
       try {
-        const result = await sendMessageToAgentTool({ workspace, message });
+        const result = await sendMessageToAgentTool({ workspace, session_id, message });
         return { content: [{ type: 'text', text: JSON.stringify(result) }] };
       } catch (error) {
         return toolError(error, 'Confirm the agent is running with get_agent_status first.');
@@ -360,13 +366,15 @@ export function createMcpServer(mode: ServerMode = 'orchestration'): McpServer {
     'Read recent terminal output from the coding agent session in a workspace. For low-level tmux access or non-agent sessions, use read_terminal_output (full mode only).',
     {
       workspace: z.string().describe('DevWorkspace name'),
+      session_id: z.string().optional()
+        .describe('Agent session ID. Required when multiple sessions exist in the workspace.'),
       lines: z.number().int().min(1).max(500).default(50).optional()
         .describe('Lines to capture (1–500, default: 50)'),
     },
     { readOnlyHint: true },
-    async ({ workspace, lines }) => {
+    async ({ workspace, session_id, lines }) => {
       try {
-        const result = await getAgentOutputTool({ workspace, lines });
+        const result = await getAgentOutputTool({ workspace, session_id, lines });
         return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       } catch (error) {
         return toolError(error, 'If the session is lost, re-launch with launch_coding_agent.');
@@ -376,12 +384,16 @@ export function createMcpServer(mode: ServerMode = 'orchestration'): McpServer {
 
   server.tool(
     'stop_agent',
-    'Stop a coding agent session in a workspace and return a completion summary. Clears session intent annotations.',
-    { workspace: z.string().describe('DevWorkspace name') },
+    'Stop a specific coding agent session in a workspace and return a completion summary. Removes the session from the sessions array; other sessions in the workspace are unaffected.',
+    {
+      workspace: z.string().describe('DevWorkspace name'),
+      session_id: z.string().optional()
+        .describe('Agent session ID. Required when multiple sessions exist in the workspace.'),
+    },
     { destructiveHint: true },
-    async ({ workspace }) => {
+    async ({ workspace, session_id }) => {
       try {
-        const result = await stopAgentTool({ workspace });
+        const result = await stopAgentTool({ workspace, session_id });
         return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       } catch (error) {
         return toolError(error);
