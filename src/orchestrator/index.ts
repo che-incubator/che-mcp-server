@@ -6,7 +6,7 @@ import { readTerminalOutput } from '../tools/read-terminal-output.js';
 import { getTerminalState } from '../tools/get-terminal-state.js';
 import { stopTerminalSession } from '../tools/stop-terminal-session.js';
 import { listWorkspaces } from '../tools/list-workspaces.js';
-import { readAgentAnnotations, writeAgentAnnotations, clearAgentAnnotations, readAgentSessions, addAgentSession } from '../kube/annotations.js';
+import { readAgentAnnotations, writeAgentAnnotations, clearAgentAnnotations, readAgentSessions, addAgentSession, removeAgentSession } from '../kube/annotations.js';
 import { getBackendEntry, DEFAULT_AGENT_TYPE } from './backend-registry.js';
 import { buildLaunchContext } from './launch-context.js';
 import type { AgentStatus, AgentPhase } from '../types.js';
@@ -99,31 +99,48 @@ export async function launchCodingAgent(params: {
   return { status: 'launched', workspace, session: sessionId };
 }
 
-export async function getAgentStatus(params: {
-  workspace: string;
-}): Promise<AgentStatus> {
-  const { workspace } = params;
-  const ann = await readAgentAnnotations(workspace);
+export async function getAgentStatus(params: { workspace: string; session_id?: string }): Promise<AgentStatus> {
+  const { workspace, session_id } = params;
 
-  if (!ann.session) {
-    return makeStatus(workspace, 'idle', ann, null, null, null);
+  let sessionId: string;
+  try {
+    sessionId = await resolveSessionId(workspace, session_id);
+  } catch (error) {
+    // If no sessions exist and no session_id was provided, return idle
+    if (!session_id && (error as Error).message.includes('No active agent session')) {
+      const ann = await readAgentAnnotations(workspace);
+      return makeStatus(workspace, 'idle', ann, null, null, null);
+    }
+    throw error;
   }
 
-  const state = await getTerminalState({
-    workspace,
-    session_name: ann.session,
-  });
+  const sessions = await readAgentSessions(workspace);
+  const session = sessions.find(s => s.session_id === sessionId);
+  if (!session) {
+    throw new Error(`Session "${sessionId}" not found in workspace "${workspace}".`);
+  }
+
+  const state = await getTerminalState({ workspace, session_name: sessionId });
 
   if (!state.session_alive) {
+    const ann: AgentAnnotationValues = {
+      session: sessionId,
+      agent_type: session.backend,
+      task: session.task,
+      launched_at: session.launched_at,
+    };
     return makeStatus(workspace, 'lost', ann, null, null, null);
   }
 
-  const { output } = await readTerminalOutput({
-    workspace,
-    session_name: ann.session,
-    lines: 20,
-  });
+  const { output } = await readTerminalOutput({ workspace, session_name: sessionId, lines: 20 });
   const ttydUrl = await getTtydUrl(workspace);
+
+  const ann: AgentAnnotationValues = {
+    session: sessionId,
+    agent_type: session.backend,
+    task: session.task,
+    launched_at: session.launched_at,
+  };
 
   if (state.process_running) {
     return makeStatus(workspace, 'running', ann, null, output, ttydUrl);
@@ -179,18 +196,15 @@ export async function listAllAgents(
 
 export async function sendMessageToAgent(params: {
   workspace: string;
+  session_id?: string;
   message: string;
 }): Promise<{ acknowledged: boolean }> {
-  const ann = await readAgentAnnotations(params.workspace);
-  if (!ann.session) {
-    throw new Error(
-      `No active agent session in workspace "${params.workspace}".`,
-    );
-  }
+  const { workspace, session_id, message } = params;
+  const sessionId = await resolveSessionId(workspace, session_id);
   await sendTerminalInput({
-    workspace: params.workspace,
-    text: params.message,
-    session_name: ann.session,
+    workspace,
+    text: message,
+    session_name: sessionId,
     enter: true,
   });
   return { acknowledged: true };
@@ -198,56 +212,72 @@ export async function sendMessageToAgent(params: {
 
 export async function getAgentOutput(params: {
   workspace: string;
+  session_id?: string;
   lines?: number;
 }): Promise<{ output: string; lines_returned: number }> {
-  const ann = await readAgentAnnotations(params.workspace);
-  if (!ann.session) {
-    throw new Error(
-      `No active agent session in workspace "${params.workspace}".`,
-    );
-  }
+  const { workspace, session_id, lines } = params;
+  const sessionId = await resolveSessionId(workspace, session_id);
   return readTerminalOutput({
-    workspace: params.workspace,
-    session_name: ann.session,
-    lines: params.lines,
+    workspace,
+    session_name: sessionId,
+    lines,
   });
 }
 
-export async function stopAgent(params: { workspace: string }): Promise<{
+export async function stopAgent(params: { workspace: string; session_id?: string }): Promise<{
   stopped: boolean;
   summary: string | null;
 }> {
-  const { workspace } = params;
-  const ann = await readAgentAnnotations(workspace);
+  const { workspace, session_id } = params;
 
-  let summary: string | null = null;
-  if (ann.session) {
-    try {
-      const { output } = await readTerminalOutput({
-        workspace,
-        session_name: ann.session,
-        lines: 50,
-      });
-      const state = await getTerminalState({
-        workspace,
-        session_name: ann.session,
-      });
-      summary = buildStopSummary({
-        output,
-        exitCode: state.exit_code,
-        task: ann.task,
-      });
-      await stopTerminalSession({ workspace, session_name: ann.session });
-    } catch {
-      // session may already be gone
+  let sessionId: string;
+  try {
+    sessionId = await resolveSessionId(workspace, session_id);
+  } catch (error) {
+    // If no sessions exist, nothing to stop
+    if (!session_id && (error as Error).message.includes('No active agent session')) {
+      return { stopped: true, summary: null };
     }
+    throw error;
   }
 
-  await clearAgentAnnotations(workspace);
+  const sessions = await readAgentSessions(workspace);
+  const session = sessions.find(s => s.session_id === sessionId);
+  if (!session) {
+    throw new Error(`Session "${sessionId}" not found in workspace "${workspace}".`);
+  }
+
+  let summary: string | null = null;
+  try {
+    const { output } = await readTerminalOutput({ workspace, session_name: sessionId, lines: 50 });
+    const state = await getTerminalState({ workspace, session_name: sessionId });
+    summary = buildStopSummary({ output, exitCode: state.exit_code, task: session.task });
+    await stopTerminalSession({ workspace, session_name: sessionId });
+  } catch {
+    // session may already be gone
+  }
+
+  await removeAgentSession(workspace, sessionId);
   return { stopped: true, summary };
 }
 
 // ── helpers ──────────────────────────────────────────────────────────────────
+
+async function resolveSessionId(workspace: string, session_id?: string): Promise<string> {
+  if (session_id) return session_id;
+
+  const sessions = await readAgentSessions(workspace);
+  if (sessions.length === 0) {
+    throw new Error(`No active agent session in workspace "${workspace}".`);
+  }
+  if (sessions.length === 1) {
+    return sessions[0].session_id;
+  }
+  throw new Error(
+    `Workspace "${workspace}" has ${sessions.length} agent sessions. ` +
+    `Specify session_id. Active sessions: ${sessions.map(s => s.session_id).join(', ')}`
+  );
+}
 
 function shellQuote(s: string): string {
   return "'" + s.replace(/'/g, "'\\''") + "'";
