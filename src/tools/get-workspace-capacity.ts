@@ -1,6 +1,7 @@
 import { getCoreV1Api, getNamespace } from '../kube/client.js';
 import { findPodForWorkspace } from '../kube/exec.js';
-import { readAgentSessions } from '../kube/annotations.js';
+import { readAgentSessions, removeAgentSession } from '../kube/annotations.js';
+import { getTerminalState } from './get-terminal-state.js';
 
 export interface WorkspaceCapacity {
   workspace: string;
@@ -61,7 +62,27 @@ async function getCapacityForWorkspace(workspace: string): Promise<WorkspaceCapa
 
   const sessions = await readAgentSessions(workspace);
 
-  const runningAgents = sessions.length;
+  // Check each session's tmux liveness; prune dead entries
+  const livenessChecks = await Promise.allSettled(
+    sessions.map(async (session) => {
+      const state = await getTerminalState({ workspace, session_name: session.session_id });
+      return { session, alive: state.session_alive };
+    }),
+  );
+
+  let runningAgents = 0;
+  for (const result of livenessChecks) {
+    if (result.status === 'rejected') {
+      // Conservative: count as alive if we couldn't check
+      runningAgents++;
+    } else if (result.value.alive) {
+      runningAgents++;
+    } else {
+      // Dead session — clean up stale annotation entry
+      removeAgentSession(workspace, result.value.session.session_id).catch(() => {});
+    }
+  }
+
   const maxAgents = Math.floor(memoryGi / DEFAULT_MEMORY_PER_AGENT_GI);
   const availableSlots = Math.max(0, maxAgents - runningAgents);
 
