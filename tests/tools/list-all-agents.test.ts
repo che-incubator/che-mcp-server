@@ -54,6 +54,26 @@ describe('listAllAgentsTool', () => {
     expect(result.items[1].phase).toBe('finished');
   });
 
+  it('returns agents from multiple sessions in the same workspace', async () => {
+    const { listAllAgents } = await import('../../src/orchestrator/index.js');
+    vi.mocked(listAllAgents).mockResolvedValue(makePaginatedResult([
+      { workspace: 'foo', phase: 'running', agent_type: 'claude-code', task: 'task A',
+        launched_at: '2026-06-03T10:00:00Z', exit_code: null, last_output: null, ttyd_url: null },
+      { workspace: 'foo', phase: 'running', agent_type: 'opencode', task: 'task B',
+        launched_at: '2026-06-03T10:05:00Z', exit_code: null, last_output: null, ttyd_url: null },
+      { workspace: 'bar', phase: 'finished', agent_type: 'claude-code', task: 'task C',
+        launched_at: '2026-06-03T09:00:00Z', exit_code: 0, last_output: 'done', ttyd_url: null },
+    ]));
+
+    const { listAllAgentsTool } = await import('../../src/tools/list-all-agents.js');
+    const result = await listAllAgentsTool();
+
+    expect(result.items).toHaveLength(3);
+    expect(result.total).toBe(3);
+    expect(result.items.filter(a => a.workspace === 'foo')).toHaveLength(2);
+    expect(result.items.filter(a => a.workspace === 'bar')).toHaveLength(1);
+  });
+
   it('returns empty items when no agents active', async () => {
     const { listAllAgents } = await import('../../src/orchestrator/index.js');
     vi.mocked(listAllAgents).mockResolvedValue(makePaginatedResult([]));
