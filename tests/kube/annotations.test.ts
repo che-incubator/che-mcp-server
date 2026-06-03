@@ -323,6 +323,108 @@ describe('readAgentSessions', () => {
       },
     ]);
   });
+
+  it('falls back to legacy annotations when ANN_SESSIONS contains malformed JSON', async () => {
+    const { getCustomObjectsApi, getNamespace } = await import('../../src/kube/client.js');
+    vi.mocked(getNamespace).mockReturnValue('user-che');
+    vi.mocked(getCustomObjectsApi).mockReturnValue({
+      getNamespacedCustomObject: vi.fn().mockResolvedValue({
+        metadata: {
+          annotations: {
+            'che.eclipse.org/agent-sessions': '{not valid json!!!',
+            'che.eclipse.org/agent-session': 'legacy-agent',
+            'che.eclipse.org/agent-type': 'claude-code',
+            'che.eclipse.org/agent-task': 'legacy task',
+            'che.eclipse.org/agent-launched-at': '2026-04-08T12:00:00Z',
+          },
+        },
+      }),
+    } as any);
+
+    const { readAgentSessions } = await import('../../src/kube/annotations.js');
+    const result = await readAgentSessions('my-workspace');
+
+    expect(result).toEqual([
+      {
+        session_id: 'legacy-agent',
+        backend: 'claude-code',
+        status: 'running',
+        working_dir: '/projects',
+        task: 'legacy task',
+        launched_at: '2026-04-08T12:00:00Z',
+      },
+    ]);
+  });
+
+  it('returns empty array when ANN_SESSIONS is malformed and no legacy annotations exist', async () => {
+    const { getCustomObjectsApi, getNamespace } = await import('../../src/kube/client.js');
+    vi.mocked(getNamespace).mockReturnValue('user-che');
+    vi.mocked(getCustomObjectsApi).mockReturnValue({
+      getNamespacedCustomObject: vi.fn().mockResolvedValue({
+        metadata: {
+          annotations: {
+            'che.eclipse.org/agent-sessions': '{not valid json!!!',
+          },
+        },
+      }),
+    } as any);
+
+    const { readAgentSessions } = await import('../../src/kube/annotations.js');
+    const result = await readAgentSessions('my-workspace');
+
+    expect(result).toEqual([]);
+  });
+
+  it('falls back to legacy annotations when ANN_SESSIONS is valid JSON but not an array', async () => {
+    const { getCustomObjectsApi, getNamespace } = await import('../../src/kube/client.js');
+    vi.mocked(getNamespace).mockReturnValue('user-che');
+    vi.mocked(getCustomObjectsApi).mockReturnValue({
+      getNamespacedCustomObject: vi.fn().mockResolvedValue({
+        metadata: {
+          annotations: {
+            'che.eclipse.org/agent-sessions': JSON.stringify({ key: 'value' }),
+            'che.eclipse.org/agent-session': 'legacy-agent',
+            'che.eclipse.org/agent-type': 'picoclaw',
+            'che.eclipse.org/agent-task': 'object fallback task',
+            'che.eclipse.org/agent-launched-at': '2026-04-08T13:00:00Z',
+          },
+        },
+      }),
+    } as any);
+
+    const { readAgentSessions } = await import('../../src/kube/annotations.js');
+    const result = await readAgentSessions('my-workspace');
+
+    expect(result).toEqual([
+      {
+        session_id: 'legacy-agent',
+        backend: 'picoclaw',
+        status: 'running',
+        working_dir: '/projects',
+        task: 'object fallback task',
+        launched_at: '2026-04-08T13:00:00Z',
+      },
+    ]);
+  });
+
+  it('returns empty array when ANN_SESSIONS is valid JSON but not an array and no legacy annotations exist', async () => {
+    const { getCustomObjectsApi, getNamespace } = await import('../../src/kube/client.js');
+    vi.mocked(getNamespace).mockReturnValue('user-che');
+    vi.mocked(getCustomObjectsApi).mockReturnValue({
+      getNamespacedCustomObject: vi.fn().mockResolvedValue({
+        metadata: {
+          annotations: {
+            'che.eclipse.org/agent-sessions': JSON.stringify({ key: 'value' }),
+          },
+        },
+      }),
+    } as any);
+
+    const { readAgentSessions } = await import('../../src/kube/annotations.js');
+    const result = await readAgentSessions('my-workspace');
+
+    expect(result).toEqual([]);
+  });
 });
 
 describe('addAgentSession', () => {

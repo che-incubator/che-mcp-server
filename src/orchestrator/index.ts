@@ -120,25 +120,19 @@ export async function getAgentStatus(params: { workspace: string; session_id?: s
 
   const state = await getTerminalState({ workspace, session_name: sessionId });
 
-  if (!state.session_alive) {
-    const ann: AgentAnnotationValues = {
-      session: sessionId,
-      agent_type: session.backend,
-      task: session.task,
-      launched_at: session.launched_at,
-    };
-    return makeStatus(workspace, 'lost', ann, null, null, null);
-  }
-
-  const { output } = await readTerminalOutput({ workspace, session_name: sessionId, lines: 20 });
-  const ttydUrl = await getTtydUrl(workspace);
-
   const ann: AgentAnnotationValues = {
     session: sessionId,
     agent_type: session.backend,
     task: session.task,
     launched_at: session.launched_at,
   };
+
+  if (!state.session_alive) {
+    return makeStatus(workspace, 'lost', ann, null, null, null);
+  }
+
+  const { output } = await readTerminalOutput({ workspace, session_name: sessionId, lines: 20 });
+  const ttydUrl = await getTtydUrl(workspace);
 
   if (state.process_running) {
     return makeStatus(workspace, 'running', ann, null, output, ttydUrl);
