@@ -9,7 +9,7 @@ import { listWorkspaces } from '../tools/list-workspaces.js';
 import { readAgentAnnotations, writeAgentAnnotations, clearAgentAnnotations, readAgentSessions, addAgentSession, removeAgentSession } from '../kube/annotations.js';
 import { getBackendEntry, DEFAULT_AGENT_TYPE } from './backend-registry.js';
 import { buildLaunchContext } from './launch-context.js';
-import type { AgentStatus, AgentPhase } from '../types.js';
+import type { AgentStatus, AgentPhase, AgentSessionEntry } from '../types.js';
 import { DEFAULT_SESSION_NAME, AGENT_TASK_MAX_BYTES, WORKSPACE_START_TIMEOUT_MS } from '../types.js';
 import type { AgentAnnotationValues } from '../kube/annotations.js';
 
@@ -152,20 +152,36 @@ export async function listAllAgents(params: { limit?: number; offset?: number } 
   offset: number;
   has_more: boolean;
 }> {
-  // Fetch all workspaces (no pagination — we need the full list to filter by annotation)
   const { items: allWorkspaces } = await listWorkspaces({ limit: 10000 });
-  const withSession = allWorkspaces.filter(
-    w => w.annotations['che.eclipse.org/agent-session'],
-  );
 
-  const results = await Promise.allSettled(
-    withSession.map(w => getAgentStatus({ workspace: w.name })),
-  );
+  const statusPromises: Promise<AgentStatus>[] = [];
 
-  const allAgents = results
-    .filter((r): r is PromiseFulfilledResult<AgentStatus> => r.status === 'fulfilled')
-    .map(r => r.value);
+  for (const ws of allWorkspaces) {
+    let sessions: AgentSessionEntry[];
+    try {
+      sessions = await readAgentSessions(ws.name);
+    } catch {
+      continue;
+    }
 
+    for (const session of sessions) {
+      statusPromises.push(
+        getAgentStatus({ workspace: ws.name, session_id: session.session_id })
+          .catch((): AgentStatus => ({
+            workspace: ws.name,
+            phase: 'lost',
+            agent_type: session.backend,
+            task: session.task,
+            launched_at: session.launched_at,
+            exit_code: null,
+            last_output: null,
+            ttyd_url: null,
+          }))
+      );
+    }
+  }
+
+  const allAgents = await Promise.all(statusPromises);
   const total = allAgents.length;
   const offset = params.offset ?? 0;
   const limit = params.limit ?? 50;
