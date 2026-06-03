@@ -165,3 +165,243 @@ describe('clearAgentAnnotations', () => {
     expect(patchMock).not.toHaveBeenCalled();
   });
 });
+
+describe('readAgentSessions', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.restoreAllMocks();
+  });
+
+  it('returns empty array when no annotations present', async () => {
+    const { getCustomObjectsApi, getNamespace } = await import('../../src/kube/client.js');
+    vi.mocked(getNamespace).mockReturnValue('user-che');
+    vi.mocked(getCustomObjectsApi).mockReturnValue({
+      getNamespacedCustomObject: vi.fn().mockResolvedValue({
+        metadata: { annotations: {} },
+      }),
+    } as any);
+
+    const { readAgentSessions } = await import('../../src/kube/annotations.js');
+    const result = await readAgentSessions('my-workspace');
+
+    expect(result).toEqual([]);
+  });
+
+  it('parses JSON array from ANN_SESSIONS annotation', async () => {
+    const { getCustomObjectsApi, getNamespace } = await import('../../src/kube/client.js');
+    vi.mocked(getNamespace).mockReturnValue('user-che');
+    vi.mocked(getCustomObjectsApi).mockReturnValue({
+      getNamespacedCustomObject: vi.fn().mockResolvedValue({
+        metadata: {
+          annotations: {
+            'che.eclipse.org/agent-sessions': JSON.stringify([
+              {
+                session_id: 'agent-1',
+                backend: 'claude-code',
+                status: 'running',
+                working_dir: '/projects',
+                task: 'fix bug',
+                launched_at: '2026-04-08T10:00:00Z',
+              },
+              {
+                session_id: 'agent-2',
+                backend: 'picoclaw',
+                status: 'running',
+                working_dir: '/projects',
+                task: 'write tests',
+                launched_at: '2026-04-08T11:00:00Z',
+              },
+            ]),
+          },
+        },
+      }),
+    } as any);
+
+    const { readAgentSessions } = await import('../../src/kube/annotations.js');
+    const result = await readAgentSessions('my-workspace');
+
+    expect(result).toEqual([
+      {
+        session_id: 'agent-1',
+        backend: 'claude-code',
+        status: 'running',
+        working_dir: '/projects',
+        task: 'fix bug',
+        launched_at: '2026-04-08T10:00:00Z',
+      },
+      {
+        session_id: 'agent-2',
+        backend: 'picoclaw',
+        status: 'running',
+        working_dir: '/projects',
+        task: 'write tests',
+        launched_at: '2026-04-08T11:00:00Z',
+      },
+    ]);
+  });
+
+  it('converts legacy singular annotations to array format', async () => {
+    const { getCustomObjectsApi, getNamespace } = await import('../../src/kube/client.js');
+    vi.mocked(getNamespace).mockReturnValue('user-che');
+    vi.mocked(getCustomObjectsApi).mockReturnValue({
+      getNamespacedCustomObject: vi.fn().mockResolvedValue({
+        metadata: {
+          annotations: {
+            'che.eclipse.org/agent-session': 'agent',
+            'che.eclipse.org/agent-type': 'claude-code',
+            'che.eclipse.org/agent-task': 'fix bug',
+            'che.eclipse.org/agent-launched-at': '2026-04-08T10:00:00Z',
+          },
+        },
+      }),
+    } as any);
+
+    const { readAgentSessions } = await import('../../src/kube/annotations.js');
+    const result = await readAgentSessions('my-workspace');
+
+    expect(result).toEqual([
+      {
+        session_id: 'agent',
+        backend: 'claude-code',
+        status: 'running',
+        working_dir: '/projects',
+        task: 'fix bug',
+        launched_at: '2026-04-08T10:00:00Z',
+      },
+    ]);
+  });
+});
+
+describe('addAgentSession', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.restoreAllMocks();
+  });
+
+  it('appends entry and writes back', async () => {
+    const { getCustomObjectsApi, getNamespace } = await import('../../src/kube/client.js');
+    const patchMock = vi.fn().mockResolvedValue({});
+    vi.mocked(getNamespace).mockReturnValue('user-che');
+    vi.mocked(getCustomObjectsApi).mockReturnValue({
+      getNamespacedCustomObject: vi.fn().mockResolvedValue({
+        metadata: {
+          annotations: {
+            'che.eclipse.org/agent-sessions': JSON.stringify([
+              {
+                session_id: 'agent-1',
+                backend: 'claude-code',
+                status: 'running',
+                working_dir: '/projects',
+                task: 'fix bug',
+                launched_at: '2026-04-08T10:00:00Z',
+              },
+            ]),
+          },
+        },
+      }),
+      patchNamespacedCustomObject: patchMock,
+    } as any);
+
+    const { addAgentSession } = await import('../../src/kube/annotations.js');
+    await addAgentSession('my-workspace', {
+      session_id: 'agent-2',
+      backend: 'picoclaw',
+      status: 'running',
+      working_dir: '/projects',
+      task: 'write tests',
+      launched_at: '2026-04-08T11:00:00Z',
+    });
+
+    expect(patchMock).toHaveBeenCalled();
+    const body = patchMock.mock.calls[0][0].body as any[];
+    expect(body).toHaveLength(1);
+    expect(body[0].op).toBe('add');
+    expect(body[0].path).toBe('/metadata/annotations/che.eclipse.org~1agent-sessions');
+
+    const sessions = JSON.parse(body[0].value);
+    expect(sessions).toHaveLength(2);
+    expect(sessions[1].session_id).toBe('agent-2');
+  });
+});
+
+describe('removeAgentSession', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.restoreAllMocks();
+  });
+
+  it('removes by session_id', async () => {
+    const { getCustomObjectsApi, getNamespace } = await import('../../src/kube/client.js');
+    const patchMock = vi.fn().mockResolvedValue({});
+    vi.mocked(getNamespace).mockReturnValue('user-che');
+    vi.mocked(getCustomObjectsApi).mockReturnValue({
+      getNamespacedCustomObject: vi.fn().mockResolvedValue({
+        metadata: {
+          annotations: {
+            'che.eclipse.org/agent-sessions': JSON.stringify([
+              {
+                session_id: 'agent-1',
+                backend: 'claude-code',
+                status: 'running',
+                working_dir: '/projects',
+                task: 'fix bug',
+                launched_at: '2026-04-08T10:00:00Z',
+              },
+              {
+                session_id: 'agent-2',
+                backend: 'picoclaw',
+                status: 'running',
+                working_dir: '/projects',
+                task: 'write tests',
+                launched_at: '2026-04-08T11:00:00Z',
+              },
+            ]),
+          },
+        },
+      }),
+      patchNamespacedCustomObject: patchMock,
+    } as any);
+
+    const { removeAgentSession } = await import('../../src/kube/annotations.js');
+    await removeAgentSession('my-workspace', 'agent-1');
+
+    expect(patchMock).toHaveBeenCalled();
+    const body = patchMock.mock.calls[0][0].body as any[];
+    const sessions = JSON.parse(body[0].value);
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0].session_id).toBe('agent-2');
+  });
+
+  it('writes empty array when last session removed', async () => {
+    const { getCustomObjectsApi, getNamespace } = await import('../../src/kube/client.js');
+    const patchMock = vi.fn().mockResolvedValue({});
+    vi.mocked(getNamespace).mockReturnValue('user-che');
+    vi.mocked(getCustomObjectsApi).mockReturnValue({
+      getNamespacedCustomObject: vi.fn().mockResolvedValue({
+        metadata: {
+          annotations: {
+            'che.eclipse.org/agent-sessions': JSON.stringify([
+              {
+                session_id: 'agent-1',
+                backend: 'claude-code',
+                status: 'running',
+                working_dir: '/projects',
+                task: 'fix bug',
+                launched_at: '2026-04-08T10:00:00Z',
+              },
+            ]),
+          },
+        },
+      }),
+      patchNamespacedCustomObject: patchMock,
+    } as any);
+
+    const { removeAgentSession } = await import('../../src/kube/annotations.js');
+    await removeAgentSession('my-workspace', 'agent-1');
+
+    expect(patchMock).toHaveBeenCalled();
+    const body = patchMock.mock.calls[0][0].body as any[];
+    const sessions = JSON.parse(body[0].value);
+    expect(sessions).toEqual([]);
+  });
+});
