@@ -14,6 +14,7 @@ import { stopWorkspace } from './tools/stop-workspace.js';
 import { deleteWorkspace } from './tools/delete-workspace.js';
 import { getWorkspaceStatus } from './tools/get-workspace-status.js';
 import { getWorkspacePod } from './tools/get-workspace-pod.js';
+import { getWorkspaceCapacity } from './tools/get-workspace-capacity.js';
 import { launchCodingAgentTool } from './tools/launch-coding-agent.js';
 import { getAgentStatusTool } from './tools/get-agent-status.js';
 import { listAllAgentsTool } from './tools/list-all-agents.js';
@@ -405,6 +406,24 @@ export function createMcpServer(mode: ServerMode = 'orchestration'): McpServer {
         return toolError(error);
       }
     },
+  );
+
+  server.tool(
+    'get_workspace_capacity',
+    'Get resource capacity and available agent slots for a workspace. Returns memory/CPU limits, running agent count, and how many more agents can be launched.',
+    {
+      workspace: z.string().optional()
+        .describe('DevWorkspace name. If omitted, returns capacity for all running workspaces.'),
+    },
+    { readOnlyHint: true },
+    async ({ workspace }) => {
+      try {
+        const result = await getWorkspaceCapacity({ workspace });
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+      } catch (error) {
+        return toolError(error);
+      }
+    }
   );
 
   server.tool(
