@@ -6,7 +6,7 @@ import { readTerminalOutput } from '../tools/read-terminal-output.js';
 import { getTerminalState } from '../tools/get-terminal-state.js';
 import { stopTerminalSession } from '../tools/stop-terminal-session.js';
 import { listWorkspaces } from '../tools/list-workspaces.js';
-import { readAgentAnnotations, writeAgentAnnotations, clearAgentAnnotations } from '../kube/annotations.js';
+import { readAgentAnnotations, writeAgentAnnotations, clearAgentAnnotations, readAgentSessions, addAgentSession } from '../kube/annotations.js';
 import { getBackendEntry, DEFAULT_AGENT_TYPE } from './backend-registry.js';
 import { buildLaunchContext } from './launch-context.js';
 import type { AgentStatus, AgentPhase } from '../types.js';
@@ -18,10 +18,13 @@ export async function launchCodingAgent(params: {
   task: string;
   agent_type?: string;
   system_prompt_file?: string;
+  session_id?: string;
+  working_directory?: string;
 }): Promise<{ status: string; workspace: string; session: string }> {
-  const { workspace, task, system_prompt_file } = params;
+  const { workspace, task, system_prompt_file, working_directory } = params;
   const agentType = params.agent_type ?? DEFAULT_AGENT_TYPE;
   const backend = getBackendEntry(agentType);
+  const sessionId = params.session_id ?? `agent-${Date.now()}`;
 
   // 1. Ensure workspace is running
   await ensureWorkspaceRunning(workspace);
@@ -38,44 +41,58 @@ export async function launchCodingAgent(params: {
     );
   }
 
-  // 3. Guard against double-launch
-  const existing = await readAgentAnnotations(workspace);
-  if (existing.session) {
-    const state = await getTerminalState({ workspace, session_name: existing.session });
+  // 3. Guard against duplicate session_id
+  const existingSessions = await readAgentSessions(workspace);
+  const duplicate = existingSessions.find(s => s.session_id === sessionId);
+  if (duplicate) {
+    const state = await getTerminalState({ workspace, session_name: sessionId });
     if (state.session_alive) {
       throw new Error(
-        `Workspace "${workspace}" already has a running agent session.\n` +
-        `Use get_agent_status('${workspace}') to check it, or stop_agent('${workspace}') first.`
+        `Session "${sessionId}" is already running in workspace "${workspace}".\n` +
+        `Use a different session_id or stop the existing session first.`
       );
     }
   }
 
   // 4. Start tmux session
-  await startTerminalSession({ workspace, session_name: DEFAULT_SESSION_NAME });
+  await startTerminalSession({ workspace, session_name: sessionId });
 
-  // 5. Build and send launch context
+  // 5. Optionally cd to working_directory
+  if (working_directory) {
+    await sendTerminalInput({
+      workspace,
+      session_name: sessionId,
+      text: `cd ${shellQuote(working_directory)}`,
+      enter: true,
+    });
+  }
+
+  // 6. Build and send launch context
   const prompt = buildLaunchContext({
     workspace,
     agentType,
     task,
     tools: toolsInstalled,
+    workingDirectory: working_directory ?? '/projects',
   });
   await sendTerminalInput({
     workspace,
     text: backend.launch_command(prompt, system_prompt_file),
-    session_name: DEFAULT_SESSION_NAME,
+    session_name: sessionId,
     enter: true,
   });
 
-  // 6. Persist intent annotations
-  await writeAgentAnnotations(workspace, {
-    session: DEFAULT_SESSION_NAME,
-    agent_type: agentType,
+  // 7. Persist session metadata
+  await addAgentSession(workspace, {
+    session_id: sessionId,
+    backend: agentType,
+    status: 'running',
+    working_dir: working_directory ?? '/projects',
     task: task.slice(0, AGENT_TASK_MAX_BYTES),
     launched_at: new Date().toISOString(),
   });
 
-  return { status: 'launched', workspace, session: DEFAULT_SESSION_NAME };
+  return { status: 'launched', workspace, session: sessionId };
 }
 
 export async function getAgentStatus(params: { workspace: string }): Promise<AgentStatus> {
@@ -186,6 +203,10 @@ export async function stopAgent(params: { workspace: string }): Promise<{
 }
 
 // ── helpers ──────────────────────────────────────────────────────────────────
+
+function shellQuote(s: string): string {
+  return "'" + s.replace(/'/g, "'\\''") + "'";
+}
 
 async function ensureWorkspaceRunning(workspace: string): Promise<void> {
   const deadline = Date.now() + WORKSPACE_START_TIMEOUT_MS;

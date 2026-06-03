@@ -5,6 +5,8 @@ interface Params {
   task: string;
   agent_type?: string;
   system_prompt_file?: string;
+  session_id?: string;
+  working_directory?: string;
 }
 
 export async function launchCodingAgentTool(params: Params) {
