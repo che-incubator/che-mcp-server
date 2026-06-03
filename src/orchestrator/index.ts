@@ -52,6 +52,8 @@ export async function launchCodingAgent(params: {
         `Use a different session_id or stop the existing session first.`
       );
     }
+    // Dead session — remove stale entry before re-launch
+    await removeAgentSession(workspace, sessionId);
   }
 
   // 4. Start tmux session
