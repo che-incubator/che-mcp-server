@@ -1,7 +1,6 @@
 import { getCoreV1Api, getNamespace } from '../kube/client.js';
 import { findPodForWorkspace } from '../kube/exec.js';
 import { readAgentSessions } from '../kube/annotations.js';
-import type { AgentSessionEntry } from '../types.js';
 
 export interface WorkspaceCapacity {
   workspace: string;
@@ -60,12 +59,7 @@ async function getCapacityForWorkspace(workspace: string): Promise<WorkspaceCapa
   const memoryGi = totalMemoryBytes / (1024 * 1024 * 1024);
   const cpuCores = totalCpuMillis / 1000;
 
-  let sessions: AgentSessionEntry[] = [];
-  try {
-    sessions = await readAgentSessions(workspace);
-  } catch {
-    // No sessions annotation
-  }
+  const sessions = await readAgentSessions(workspace);
 
   const runningAgents = sessions.length;
   const maxAgents = Math.floor(memoryGi / DEFAULT_MEMORY_PER_AGENT_GI);

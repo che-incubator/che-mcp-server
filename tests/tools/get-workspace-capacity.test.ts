@@ -66,6 +66,31 @@ describe('getWorkspaceCapacity', () => {
     expect((result as any).available_slots).toBe(2);
   });
 
+  it('propagates API errors from readAgentSessions', async () => {
+    const { findPodForWorkspace } = await import('../../src/kube/exec.js');
+    const { getCoreV1Api, getNamespace } = await import('../../src/kube/client.js');
+    const { readAgentSessions } = await import('../../src/kube/annotations.js');
+
+    vi.mocked(findPodForWorkspace).mockResolvedValue({ podName: 'ws-pod-1', containers: ['dev'] });
+    vi.mocked(getNamespace).mockReturnValue('user-che');
+    vi.mocked(getCoreV1Api).mockReturnValue({
+      readNamespacedPod: vi.fn().mockResolvedValue({
+        spec: {
+          containers: [
+            { name: 'dev', resources: { limits: { memory: '8Gi', cpu: '4' } } },
+          ],
+        },
+      }),
+    } as any);
+
+    const apiError = Object.assign(new Error('Internal Server Error'), { statusCode: 500 });
+    vi.mocked(readAgentSessions).mockRejectedValue(apiError);
+
+    const { getWorkspaceCapacity } = await import('../../src/tools/get-workspace-capacity.js');
+
+    await expect(getWorkspaceCapacity({ workspace: 'my-ws' })).rejects.toThrow('Internal Server Error');
+  });
+
   it('available_slots is never negative', async () => {
     const { findPodForWorkspace } = await import('../../src/kube/exec.js');
     const { getCoreV1Api, getNamespace } = await import('../../src/kube/client.js');
