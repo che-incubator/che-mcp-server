@@ -331,13 +331,14 @@ describe('addAgentSession', () => {
     vi.restoreAllMocks();
   });
 
-  it('appends entry and writes back', async () => {
+  it('appends entry and writes back with resourceVersion precondition', async () => {
     const { getCustomObjectsApi, getNamespace } = await import('../../src/kube/client.js');
     const patchMock = vi.fn().mockResolvedValue({});
     vi.mocked(getNamespace).mockReturnValue('user-che');
     vi.mocked(getCustomObjectsApi).mockReturnValue({
       getNamespacedCustomObject: vi.fn().mockResolvedValue({
         metadata: {
+          resourceVersion: '12345',
           annotations: {
             'che.eclipse.org/agent-sessions': JSON.stringify([
               {
@@ -367,13 +368,135 @@ describe('addAgentSession', () => {
 
     expect(patchMock).toHaveBeenCalled();
     const body = patchMock.mock.calls[0][0].body as any[];
-    expect(body).toHaveLength(1);
-    expect(body[0].op).toBe('add');
-    expect(body[0].path).toBe('/metadata/annotations/che.eclipse.org~1agent-sessions');
+    expect(body).toHaveLength(2);
 
-    const sessions = JSON.parse(body[0].value);
+    // First op is the resourceVersion precondition
+    expect(body[0].op).toBe('test');
+    expect(body[0].path).toBe('/metadata/resourceVersion');
+    expect(body[0].value).toBe('12345');
+
+    // Second op is the actual annotation write
+    expect(body[1].op).toBe('add');
+    expect(body[1].path).toBe('/metadata/annotations/che.eclipse.org~1agent-sessions');
+
+    const sessions = JSON.parse(body[1].value);
     expect(sessions).toHaveLength(2);
     expect(sessions[1].session_id).toBe('agent-2');
+  });
+
+  it('retries on 409 Conflict', async () => {
+    const { getCustomObjectsApi, getNamespace } = await import('../../src/kube/client.js');
+    const getMock = vi.fn()
+      .mockResolvedValueOnce({
+        metadata: {
+          resourceVersion: '100',
+          annotations: {
+            'che.eclipse.org/agent-sessions': JSON.stringify([]),
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        metadata: {
+          resourceVersion: '101',
+          annotations: {
+            'che.eclipse.org/agent-sessions': JSON.stringify([]),
+          },
+        },
+      });
+    const patchMock = vi.fn()
+      .mockRejectedValueOnce({ statusCode: 409 })
+      .mockResolvedValueOnce({});
+    vi.mocked(getNamespace).mockReturnValue('user-che');
+    vi.mocked(getCustomObjectsApi).mockReturnValue({
+      getNamespacedCustomObject: getMock,
+      patchNamespacedCustomObject: patchMock,
+    } as any);
+
+    const { addAgentSession } = await import('../../src/kube/annotations.js');
+    await addAgentSession('my-workspace', {
+      session_id: 'agent-1',
+      backend: 'claude-code',
+      status: 'running',
+      working_dir: '/projects',
+      task: 'fix bug',
+      launched_at: '2026-04-08T10:00:00Z',
+    });
+
+    expect(getMock).toHaveBeenCalledTimes(2);
+    expect(patchMock).toHaveBeenCalledTimes(2);
+
+    // Second attempt should use updated resourceVersion
+    const secondBody = patchMock.mock.calls[1][0].body as any[];
+    expect(secondBody[0].value).toBe('101');
+  });
+
+  it('retries on 422 (JSON patch test failure)', async () => {
+    const { getCustomObjectsApi, getNamespace } = await import('../../src/kube/client.js');
+    const getMock = vi.fn()
+      .mockResolvedValueOnce({
+        metadata: {
+          resourceVersion: '200',
+          annotations: { 'che.eclipse.org/agent-sessions': '[]' },
+        },
+      })
+      .mockResolvedValueOnce({
+        metadata: {
+          resourceVersion: '201',
+          annotations: { 'che.eclipse.org/agent-sessions': '[]' },
+        },
+      });
+    const patchMock = vi.fn()
+      .mockRejectedValueOnce({ response: { statusCode: 422 } })
+      .mockResolvedValueOnce({});
+    vi.mocked(getNamespace).mockReturnValue('user-che');
+    vi.mocked(getCustomObjectsApi).mockReturnValue({
+      getNamespacedCustomObject: getMock,
+      patchNamespacedCustomObject: patchMock,
+    } as any);
+
+    const { addAgentSession } = await import('../../src/kube/annotations.js');
+    await addAgentSession('my-workspace', {
+      session_id: 'agent-1',
+      backend: 'claude-code',
+      status: 'running',
+      working_dir: '/projects',
+      task: 'test',
+      launched_at: '2026-04-08T10:00:00Z',
+    });
+
+    expect(getMock).toHaveBeenCalledTimes(2);
+    expect(patchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('throws after max retries exceeded', async () => {
+    const { getCustomObjectsApi, getNamespace } = await import('../../src/kube/client.js');
+    const getMock = vi.fn().mockResolvedValue({
+      metadata: {
+        resourceVersion: '100',
+        annotations: { 'che.eclipse.org/agent-sessions': '[]' },
+      },
+    });
+    const patchMock = vi.fn().mockRejectedValue({ statusCode: 409 });
+    vi.mocked(getNamespace).mockReturnValue('user-che');
+    vi.mocked(getCustomObjectsApi).mockReturnValue({
+      getNamespacedCustomObject: getMock,
+      patchNamespacedCustomObject: patchMock,
+    } as any);
+
+    const { addAgentSession } = await import('../../src/kube/annotations.js');
+    await expect(
+      addAgentSession('my-workspace', {
+        session_id: 'agent-1',
+        backend: 'claude-code',
+        status: 'running',
+        working_dir: '/projects',
+        task: 'fix bug',
+        launched_at: '2026-04-08T10:00:00Z',
+      }),
+    ).rejects.toMatchObject({ statusCode: 409 });
+
+    expect(getMock).toHaveBeenCalledTimes(3);
+    expect(patchMock).toHaveBeenCalledTimes(3);
   });
 });
 
@@ -383,13 +506,14 @@ describe('removeAgentSession', () => {
     vi.restoreAllMocks();
   });
 
-  it('removes by session_id', async () => {
+  it('removes by session_id with resourceVersion precondition', async () => {
     const { getCustomObjectsApi, getNamespace } = await import('../../src/kube/client.js');
     const patchMock = vi.fn().mockResolvedValue({});
     vi.mocked(getNamespace).mockReturnValue('user-che');
     vi.mocked(getCustomObjectsApi).mockReturnValue({
       getNamespacedCustomObject: vi.fn().mockResolvedValue({
         metadata: {
+          resourceVersion: '555',
           annotations: {
             'che.eclipse.org/agent-sessions': JSON.stringify([
               {
@@ -420,7 +544,15 @@ describe('removeAgentSession', () => {
 
     expect(patchMock).toHaveBeenCalled();
     const body = patchMock.mock.calls[0][0].body as any[];
-    const sessions = JSON.parse(body[0].value);
+    expect(body).toHaveLength(2);
+
+    // First op is the resourceVersion precondition
+    expect(body[0].op).toBe('test');
+    expect(body[0].path).toBe('/metadata/resourceVersion');
+    expect(body[0].value).toBe('555');
+
+    // Second op is the annotation write
+    const sessions = JSON.parse(body[1].value);
     expect(sessions).toHaveLength(1);
     expect(sessions[0].session_id).toBe('agent-2');
   });
@@ -432,6 +564,7 @@ describe('removeAgentSession', () => {
     vi.mocked(getCustomObjectsApi).mockReturnValue({
       getNamespacedCustomObject: vi.fn().mockResolvedValue({
         metadata: {
+          resourceVersion: '777',
           annotations: {
             'che.eclipse.org/agent-sessions': JSON.stringify([
               {
@@ -454,7 +587,78 @@ describe('removeAgentSession', () => {
 
     expect(patchMock).toHaveBeenCalled();
     const body = patchMock.mock.calls[0][0].body as any[];
-    const sessions = JSON.parse(body[0].value);
+    const sessions = JSON.parse(body[1].value);
     expect(sessions).toEqual([]);
+  });
+
+  it('retries on conflict and succeeds', async () => {
+    const { getCustomObjectsApi, getNamespace } = await import('../../src/kube/client.js');
+    const getMock = vi.fn()
+      .mockResolvedValueOnce({
+        metadata: {
+          resourceVersion: '300',
+          annotations: {
+            'che.eclipse.org/agent-sessions': JSON.stringify([
+              { session_id: 'agent-1', backend: 'claude-code', status: 'running', working_dir: '/projects', task: 'a', launched_at: '' },
+            ]),
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        metadata: {
+          resourceVersion: '301',
+          annotations: {
+            'che.eclipse.org/agent-sessions': JSON.stringify([
+              { session_id: 'agent-1', backend: 'claude-code', status: 'running', working_dir: '/projects', task: 'a', launched_at: '' },
+            ]),
+          },
+        },
+      });
+    const patchMock = vi.fn()
+      .mockRejectedValueOnce({ body: { code: 409 } })
+      .mockResolvedValueOnce({});
+    vi.mocked(getNamespace).mockReturnValue('user-che');
+    vi.mocked(getCustomObjectsApi).mockReturnValue({
+      getNamespacedCustomObject: getMock,
+      patchNamespacedCustomObject: patchMock,
+    } as any);
+
+    const { removeAgentSession } = await import('../../src/kube/annotations.js');
+    await removeAgentSession('my-workspace', 'agent-1');
+
+    expect(getMock).toHaveBeenCalledTimes(2);
+    expect(patchMock).toHaveBeenCalledTimes(2);
+
+    // Second attempt should use updated resourceVersion
+    const secondBody = patchMock.mock.calls[1][0].body as any[];
+    expect(secondBody[0].value).toBe('301');
+  });
+
+  it('throws after max retries exceeded', async () => {
+    const { getCustomObjectsApi, getNamespace } = await import('../../src/kube/client.js');
+    const getMock = vi.fn().mockResolvedValue({
+      metadata: {
+        resourceVersion: '400',
+        annotations: {
+          'che.eclipse.org/agent-sessions': JSON.stringify([
+            { session_id: 'agent-1', backend: 'claude-code', status: 'running', working_dir: '/projects', task: 'a', launched_at: '' },
+          ]),
+        },
+      },
+    });
+    const patchMock = vi.fn().mockRejectedValue({ statusCode: 422 });
+    vi.mocked(getNamespace).mockReturnValue('user-che');
+    vi.mocked(getCustomObjectsApi).mockReturnValue({
+      getNamespacedCustomObject: getMock,
+      patchNamespacedCustomObject: patchMock,
+    } as any);
+
+    const { removeAgentSession } = await import('../../src/kube/annotations.js');
+    await expect(
+      removeAgentSession('my-workspace', 'agent-1'),
+    ).rejects.toMatchObject({ statusCode: 422 });
+
+    expect(getMock).toHaveBeenCalledTimes(3);
+    expect(patchMock).toHaveBeenCalledTimes(3);
   });
 });
