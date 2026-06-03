@@ -45,6 +45,18 @@ export const ANN_TYPE = 'che.eclipse.org/agent-type';
 export const ANN_TASK = 'che.eclipse.org/agent-task';
 export const ANN_LAUNCHED = 'che.eclipse.org/agent-launched-at';
 
+// Multi-session annotation key (JSON array of AgentSessionEntry)
+export const ANN_SESSIONS = 'che.eclipse.org/agent-sessions';
+
+export interface AgentSessionEntry {
+  session_id: string;
+  backend: string;
+  status: string;
+  working_dir: string;
+  task: string;
+  launched_at: string;
+}
+
 export const CHE_GATEWAY_CONTAINER = 'che-gateway';
 export const DEFAULT_SESSION_NAME = 'agent';
 export const DEFAULT_LINES = 50;
