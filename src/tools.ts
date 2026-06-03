@@ -423,18 +423,15 @@ export function createMcpServer(mode: ServerMode = 'orchestration'): McpServer {
         .describe(
           'Path (inside the target workspace) to a system prompt file appended via --append-system-prompt-file. The file must already exist in the workspace filesystem. Claude-code only; other agents ignore this parameter.',
         ),
+      session_id: z.string().optional()
+        .describe('Unique session ID for this agent instance (auto-generated if omitted).'),
+      working_directory: z.string().optional()
+        .describe('Working directory inside the workspace (default: /projects).')
     },
-    async ({ workspace, task, agent_type, system_prompt_file }) => {
+    async ({ workspace, task, agent_type, system_prompt_file, session_id, working_directory }) => {
       try {
-        const result = await launchCodingAgentTool({
-          workspace,
-          task,
-          agent_type,
-          system_prompt_file,
-        });
-        return {
-          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-        };
+        const result = await launchCodingAgentTool({ workspace, task, agent_type, system_prompt_file, session_id, working_directory });
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       } catch (error) {
         return toolError(
           error,
