@@ -8,7 +8,7 @@ interface CreateWorkspaceParams {
   repos?: Array<{ url: string; branch?: string }>;
 }
 
-function extractRepoName(url: string): string {
+export function extractRepoName(url: string): string {
   const match = url.match(/\/([^/]+?)(\.git)?$/);
   return match ? match[1] : 'project';
 }
