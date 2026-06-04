@@ -5,6 +5,12 @@ import { injectTool } from './inject-tool.js';
 interface CreateWorkspaceParams {
   name?: string;
   tools?: string[];
+  repos?: Array<{ url: string; branch?: string }>;
+}
+
+function extractRepoName(url: string): string {
+  const match = url.match(/\/([^/]+?)(\.git)?$/);
+  return match ? match[1] : 'project';
 }
 
 export async function createWorkspace(params: CreateWorkspaceParams): Promise<{
@@ -26,6 +32,13 @@ export async function createWorkspace(params: CreateWorkspaceParams): Promise<{
     spec: {
       started: false,
       template: {
+        projects: params.repos?.map(r => ({
+          name: extractRepoName(r.url),
+          git: {
+            remotes: { origin: r.url },
+            checkoutFrom: r.branch ? { revision: r.branch } : undefined
+          }
+        })),
         components: [
           {
             name: 'dev',
