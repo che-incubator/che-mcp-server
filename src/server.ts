@@ -4,39 +4,79 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import { createMcpServer } from './tools.js';
 import type { ServerMode } from './types.js';
+import type { ServerConfig } from './config.js';
 
 const transports = new Map<string, StreamableHTTPServerTransport>();
 
-export async function startHttpServer(port: number): Promise<http.Server> {
+export async function startHttpServer(
+  port: number,
+  config: ServerConfig,
+): Promise<http.Server> {
+  let authMiddleware:
+    | ((
+        req: http.IncomingMessage,
+        res: http.ServerResponse,
+        next: () => Promise<void>,
+      ) => Promise<void>)
+    | null = null;
+
+  if (config.authEnabled) {
+    const { rawHttpK8sAuth, createDefaultK8sClient } = await import(
+      '@che-incubator/k8s-mcp-auth'
+    );
+    authMiddleware = rawHttpK8sAuth({
+      publicPaths: [{ method: 'GET', path: '/healthz' }],
+      namespace: config.namespace,
+      k8sClient: createDefaultK8sClient(),
+    });
+  }
+
   const server = http.createServer(async (req, res) => {
-    const url = new URL(req.url ?? '/', `http://${req.headers.host}`);
-
-    if (url.pathname === '/healthz' && req.method === 'GET') {
-      res.writeHead(200, { 'Content-Type': 'text/plain' });
-      res.end('OK');
-      return;
+    if (authMiddleware) {
+      await authMiddleware(req, res, async () => {
+        await handleRouting(req, res);
+      });
+    } else {
+      await handleRouting(req, res);
     }
-
-    if (url.pathname === '/mcp') {
-      if (
-        req.method === 'POST' ||
-        req.method === 'GET' ||
-        req.method === 'DELETE'
-      ) {
-        await handleMcpRequest(req, res);
-      } else {
-        res.writeHead(405).end('Method Not Allowed');
-      }
-      return;
-    }
-
-    res.writeHead(404).end('Not Found');
   });
 
   return new Promise((resolve, reject) => {
     server.listen(port, () => resolve(server));
     server.on('error', reject);
   });
+}
+
+async function handleRouting(
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+): Promise<void> {
+  const url = new URL(req.url ?? '/', `http://${req.headers.host}`);
+
+  if (url.pathname === '/healthz' && req.method === 'GET') {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end('OK');
+    return;
+  }
+
+  if (url.pathname === '/mcp') {
+    if (
+      req.method === 'POST' ||
+      req.method === 'GET' ||
+      req.method === 'DELETE'
+    ) {
+      const authContext = (req as any).authContext;
+      if (authContext) {
+        console.log(`[mcp] Authenticated user: ${authContext.user}`);
+      }
+      await handleMcpRequest(req, res);
+    } else {
+      res.writeHead(405).end('Method Not Allowed');
+    }
+    return;
+  }
+
+  res.writeHead(404).end('Not Found');
 }
 
 async function handleMcpRequest(

@@ -8,14 +8,23 @@ import type { ServerMode } from './types.js';
 
 async function main(): Promise<void> {
   const config = parseConfig(process.argv.slice(2));
+
+  if (config.authEnabled && !config.namespace) {
+    console.error(
+      'Fatal: NAMESPACE environment variable is required when auth is enabled. ' +
+      'Set NAMESPACE or set CHE_MCP_AUTH_ENABLED=false.',
+    );
+    process.exit(1);
+  }
+
   await initKubeClient();
 
   if (config.transport === 'http') {
-    const server = await startHttpServer(config.port);
+    const server = await startHttpServer(config.port, config);
     const address = server.address();
     const port =
       typeof address === 'object' && address ? address.port : config.port;
-    console.log(`che-mcp-server listening on port ${port}`);
+    console.log(`che-mcp-server listening on port ${port} (auth: ${config.authEnabled})`);
 
     const shutdown = async () => {
       console.log('Shutting down...');
