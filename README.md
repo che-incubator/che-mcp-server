@@ -6,17 +6,20 @@ MCP server for Eclipse Che — exposes DevWorkspace operations and tmux-based co
 
 ### On-cluster (agent running as a DevWorkspace)
 
-The MCP server is deployed as a service in the user namespace. Connect to it directly:
+The MCP server is deployed as a service in the user namespace. When auth is enabled (default for HTTP mode), clients must send a bearer token:
 
 ```bash
-# Claude Code
-claude mcp add --transport http che http://che-mcp-server:8080/mcp
+# Get a token
+TOKEN=$(oc whoami -t)                                          # OpenShift
+TOKEN=$(kubectl create token che-mcp-server --duration=2h)     # vanilla K8s
 
-# ZeroClaw — add to zeroclaw.toml
-[[mcp.servers]]
-name = "che"
-transport = "http"
-url = "http://che-mcp-server:8080/mcp"
+# Claude Code — with auth header
+claude mcp add --transport http \
+  --header "Authorization: Bearer $TOKEN" \
+  che http://che-mcp-server:8080/mcp
+
+# Without auth (ClusterIP-only, auth disabled)
+claude mcp add --transport http che http://che-mcp-server:8080/mcp
 ```
 
 ### Local (from git repo)
@@ -60,7 +63,9 @@ claude mcp add che-mcp-server -- npx che-mcp-server
 |----------|-------------|---------|
 | `CHE_MCP_TRANSPORT` | Transport mode: `stdio` or `http` | `stdio` |
 | `CHE_MCP_PORT` | Port for HTTP transport | `8080` |
-| `CHE_MCP_NAMESPACE` | Override namespace detection | (from kubeconfig) |
+| `CHE_MCP_AUTH_ENABLED` | Enable K8s bearer token authentication (HTTP mode only) | `true` (HTTP), `false` (stdio) |
+| `NAMESPACE` | Namespace for auth scope (required when auth enabled) | (from SA mount) |
+| `CHE_MCP_NAMESPACE` | Override namespace for workspace operations | (from kubeconfig) |
 
 ### CLI Flags
 
@@ -139,10 +144,19 @@ IMAGE=myrepo/myimage TAG=v1 make image image-push
 ### Deploy to Kubernetes
 
 ```bash
-kubectl apply -k deploy/ -n <namespace>
+# Base deployment (ClusterIP only, auth enabled)
+kubectl apply -k deploy/base/ -n <namespace>
+
+# With OpenShift Route (external access via HTTPS)
+kubectl apply -k deploy/overlays/openshift/ -n <namespace>
+
+# With vanilla K8s Ingress (external access)
+kubectl apply -k deploy/overlays/ingress/ -n <namespace>
 ```
 
 The server starts in HTTP mode on port 8080 with a health endpoint at `/healthz`.
+
+**Auth requirements:** The base deployment includes a ClusterRole granting `create` on `tokenreviews` and `subjectaccessreviews`. The `NAMESPACE` env var is injected via the Kubernetes Downward API. To disable auth (e.g., for development), set `CHE_MCP_AUTH_ENABLED=false` in the Deployment.
 
 ## How It Works
 
@@ -162,9 +176,11 @@ Sessions use `remain-on-exit on` and 5000-line scrollback.
 
 ### Security
 
+- **Authentication:** HTTP mode validates bearer tokens via the K8s `TokenReview` API (enabled by default, toggle with `CHE_MCP_AUTH_ENABLED`)
+- **Health probes:** `GET /healthz` bypasses auth — K8s liveness/readiness probes work without tokens
+- **Fail closed:** If the K8s API is unreachable, auth returns 503 — requests are never passed through unauthenticated
 - The server only accesses the user's namespace from their kubeconfig context
 - No cross-namespace operations
-- The user's OAuth token limits operations to what they can do in the Che Dashboard
 - All exec operations target the first non-`che-gateway` container (overridable with `container` parameter)
 
 ## License
