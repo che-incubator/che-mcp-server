@@ -1,0 +1,16 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: che-mcp-server
+  labels:
+    app: che-mcp-server
+spec:
+  to:
+    kind: Service
+    name: che-mcp-server
+    weight: 100
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

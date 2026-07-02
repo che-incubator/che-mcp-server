@@ -25,6 +25,12 @@ spec:
           env:
             - name: CHE_MCP_TRANSPORT
               value: "http"
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: CHE_MCP_AUTH_ENABLED
+              value: "true"
           livenessProbe:
             httpGet:
               path: /healthz

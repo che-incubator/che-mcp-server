@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: che-mcp-server
+  labels:
+    app: che-mcp-server
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: che-mcp-server
+                port:
+                  number: 8080
+  tls: []
