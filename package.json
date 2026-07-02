@@ -26,7 +26,7 @@
   },
   "license": "Apache-2.0",
   "dependencies": {
-    "@che-incubator/k8s-mcp-auth": "file:../../../../../private/tmp/k8s-mcp-auth",
+    "@che-incubator/k8s-mcp-auth": "github:akurinnoy/k8s-mcp-auth",
     "@kubernetes/client-node": "^1.4.0",
     "@modelcontextprotocol/sdk": "^1.27.1"
   },
