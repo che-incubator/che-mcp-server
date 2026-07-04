@@ -30,7 +30,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: CHE_MCP_AUTH_ENABLED
-              value: "true"
+              value: "false"
           livenessProbe:
             httpGet:
               path: /healthz

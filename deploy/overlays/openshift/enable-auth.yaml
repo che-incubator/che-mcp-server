@@ -1,0 +1,12 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: che-mcp-server
+spec:
+  template:
+    spec:
+      containers:
+        - name: che-mcp-server
+          env:
+            - name: CHE_MCP_AUTH_ENABLED
+              value: "true"
