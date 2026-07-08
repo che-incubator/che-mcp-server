@@ -622,6 +622,7 @@ export function createMcpServer(mode: ServerMode = 'orchestration'): McpServer {
         .optional()
         .describe('Filter by thread — only matching messages are consumed'),
     },
+    { destructiveHint: true },
     async ({ session_id, thread_id }) => {
       try {
         const result = receiveMessagesTool({ session_id, thread_id });
@@ -630,7 +631,6 @@ export function createMcpServer(mode: ServerMode = 'orchestration'): McpServer {
         return toolError(error);
       }
     },
-    { destructiveHint: true },
   );
 
   return server;
