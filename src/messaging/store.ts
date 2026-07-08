@@ -20,17 +20,25 @@ export function initStore(dataDir: string): void {
   dataFile = join(dataDir, 'messages.json');
   tmpFile = join(dataDir, 'messages.json.tmp');
   mkdirSync(dataDir, { recursive: true });
+  inboxes.clear();
   // CRASH RECOVERY: promote a completed write that survived a crash
   if (existsSync(tmpFile)) {
-    renameSync(tmpFile, dataFile);
+    try {
+      JSON.parse(readFileSync(tmpFile, 'utf8'));
+      renameSync(tmpFile, dataFile);
+    } catch {
+      rmSync(tmpFile, { force: true });
+    }
   }
   if (existsSync(dataFile)) {
-    const entries = JSON.parse(readFileSync(dataFile, 'utf8'));
-    for (const [key, msgs] of entries) {
-      inboxes.set(key, msgs);
+    try {
+      const entries = JSON.parse(readFileSync(dataFile, 'utf8'));
+      for (const [key, msgs] of entries) {
+        inboxes.set(key, msgs);
+      }
+    } catch {
+      // Corrupted data file — start with empty state
     }
-  } else {
-    inboxes.clear();
   }
 }
 

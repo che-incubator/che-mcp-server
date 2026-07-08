@@ -630,6 +630,7 @@ export function createMcpServer(mode: ServerMode = 'orchestration'): McpServer {
         return toolError(error);
       }
     },
+    { destructiveHint: true },
   );
 
   return server;

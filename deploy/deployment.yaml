@@ -27,6 +27,9 @@ spec:
               value: "http"
             - name: CHE_MCP_DATA_DIR
               value: "/data"
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
           volumeMounts:
             - name: data
               mountPath: /data
