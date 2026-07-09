@@ -112,8 +112,12 @@ export function clearAllInboxes(): void {
 function flushToDisk(): void {
   if (dataFile === '') return;
   const json = JSON.stringify(Array.from(inboxes.entries()));
-  writeFileSync(tmpFile, json, 'utf8');
-  renameSync(tmpFile, dataFile);
+  try {
+    writeFileSync(tmpFile, json, 'utf8');
+    renameSync(tmpFile, dataFile);
+  } catch (e) {
+    console.error('flushToDisk failed:', e);
+  }
 }
 
 if (!process.env.VITEST) {
