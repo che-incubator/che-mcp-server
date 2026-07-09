@@ -25,6 +25,8 @@ spec:
           env:
             - name: CHE_MCP_TRANSPORT
               value: "http"
+            - name: CHE_MCP_MODE
+              value: "full"
             - name: CHE_MCP_DATA_DIR
               value: "/data"
           securityContext:
