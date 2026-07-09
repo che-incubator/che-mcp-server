@@ -30,8 +30,8 @@ NAMESPACE=<your-namespace>
 
 # Claude Code — via K8s API service proxy
 claude mcp add --transport http \
-  --header "Authorization: Bearer $(oc whoami -t)" \
-  che-mcp "$API_SERVER/api/v1/namespaces/$NAMESPACE/services/che-mcp-server:8080/proxy/mcp"
+  che-mcp "$API_SERVER/api/v1/namespaces/$NAMESPACE/services/che-mcp-server:8080/proxy/mcp" \
+  --header "Authorization: Bearer $(oc whoami -t)"
 ```
 
 No ClusterRole or Route required — the API server handles authentication and proxies to the ClusterIP service. The caller needs `services/proxy` RBAC permission in the target namespace.
