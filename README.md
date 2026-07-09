@@ -25,11 +25,11 @@ Connect to the MCP server from your local machine using the stdio bridge. It man
 
 ```bash
 # Via npx (no install needed)
-claude mcp add --transport stdio che-mcp -- npx -p che-mcp-server che-mcp-bridge
+claude mcp add che-mcp -- npx --package che-mcp-server che-mcp-bridge
 
 # Or install globally
 npm install -g che-mcp-server
-claude mcp add --transport stdio che-mcp -- che-mcp-bridge
+claude mcp add che-mcp -- che-mcp-bridge
 ```
 
 Configuration via environment variables:
