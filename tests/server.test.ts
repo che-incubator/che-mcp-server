@@ -25,6 +25,62 @@ describe('startHttpServer', () => {
     }
   });
 
+  it('returns Content-Type text/plain on GET /healthz', async () => {
+    vi.doMock('../src/tools.js', () => ({
+      createMcpServer: () => ({ connect: vi.fn() }),
+    }));
+
+    const { startHttpServer } = await import('../src/server.js');
+    const httpServer = await startHttpServer(0);
+    const port = (httpServer.address() as any).port;
+
+    try {
+      const res = await fetch(`http://localhost:${port}/healthz`);
+      expect(res.status).toBe(200);
+      expect(res.headers.get('content-type')).toBe('text/plain');
+    } finally {
+      httpServer.close();
+    }
+  });
+
+  it('returns 404 for POST /healthz', async () => {
+    vi.doMock('../src/tools.js', () => ({
+      createMcpServer: () => ({ connect: vi.fn() }),
+    }));
+
+    const { startHttpServer } = await import('../src/server.js');
+    const httpServer = await startHttpServer(0);
+    const port = (httpServer.address() as any).port;
+
+    try {
+      const res = await fetch(`http://localhost:${port}/healthz`, {
+        method: 'POST',
+      });
+      expect(res.status).toBe(404);
+    } finally {
+      httpServer.close();
+    }
+  });
+
+  it('returns 404 for PUT /healthz', async () => {
+    vi.doMock('../src/tools.js', () => ({
+      createMcpServer: () => ({ connect: vi.fn() }),
+    }));
+
+    const { startHttpServer } = await import('../src/server.js');
+    const httpServer = await startHttpServer(0);
+    const port = (httpServer.address() as any).port;
+
+    try {
+      const res = await fetch(`http://localhost:${port}/healthz`, {
+        method: 'PUT',
+      });
+      expect(res.status).toBe(404);
+    } finally {
+      httpServer.close();
+    }
+  });
+
   it('returns 404 for unknown paths', async () => {
     vi.doMock('../src/tools.js', () => ({
       createMcpServer: () => ({ connect: vi.fn() }),
