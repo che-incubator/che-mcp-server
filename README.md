@@ -19,23 +19,6 @@ transport = "http"
 url = "http://che-mcp-server:8080/mcp"
 ```
 
-### On-cluster (external access via K8s API proxy)
-
-Access the MCP server from outside the cluster without port-forwarding. The K8s API server authenticates requests using your kubeconfig credentials:
-
-```bash
-# Get the API server URL and namespace
-API_SERVER=$(kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}')
-NAMESPACE=<your-namespace>
-
-# Claude Code — via K8s API service proxy
-claude mcp add --transport http \
-  --header "Authorization: Bearer $(oc whoami -t)" \
-  che-mcp "$API_SERVER/api/v1/namespaces/$NAMESPACE/services/che-mcp-server:8080/proxy/mcp"
-```
-
-No ClusterRole or Route required — the API server handles authentication and proxies to the ClusterIP service. The caller needs `services/proxy` RBAC permission in the target namespace.
-
 ### Local (from git repo)
 
 ```bash
