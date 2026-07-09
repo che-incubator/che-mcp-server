@@ -4,7 +4,7 @@
 // Launches oc port-forward, translates stdio JSON-RPC to HTTP, auto-restarts on failure.
 //
 // Usage:
-//   claude mcp add --transport stdio che-mcp-server -- node /path/to/stdio-bridge.js
+//   claude mcp add --transport stdio che-mcp -- che-mcp-bridge
 //
 // Environment:
 //   MCP_NAMESPACE  - Kubernetes namespace (default: from oc project)
@@ -21,18 +21,22 @@ const SERVICE = process.env.MCP_SERVICE || 'che-mcp-server';
 const SERVICE_PORT = parseInt(process.env.MCP_PORT || '8080', 10);
 const MAX_RESTARTS = 5;
 const RESTART_DELAY_MS = 1000;
+const REQUEST_TIMEOUT_MS = 30000;
 
 let localPort = 0;
 let pfProcess = null;
 let sessionId = null;
 let restartCount = 0;
 let shuttingDown = false;
+let stdinClosed = false;
 
 function detectNamespace() {
   try {
     return execFileSync('oc', ['project', '-q'], { encoding: 'utf8', timeout: 5000 }).trim();
-  } catch {
-    return 'akurinnoy-che';
+  } catch (e) {
+    process.stderr.write('[bridge] failed to detect namespace: ' + e.message + '\n');
+    process.stderr.write('[bridge] set MCP_NAMESPACE environment variable or run oc login first\n');
+    process.exit(1);
   }
 }
 
@@ -109,13 +113,14 @@ function forwardRequest(message) {
       path: '/mcp',
       method: 'POST',
       headers: headers,
+      timeout: REQUEST_TIMEOUT_MS,
     }, function (res) {
       if (res.headers['mcp-session-id']) sessionId = res.headers['mcp-session-id'];
       var ct = res.headers['content-type'] || '';
 
       if (ct.indexOf('text/event-stream') !== -1) {
         var buf = '';
-        var resolved = false;
+        var lastPayload = null;
         res.on('data', function (chunk) {
           buf += chunk.toString();
           var parts = buf.split('\n\n');
@@ -124,19 +129,13 @@ function forwardRequest(message) {
             var lines = parts[i].split('\n');
             for (var j = 0; j < lines.length; j++) {
               if (lines[j].indexOf('data: ') === 0) {
-                var payload = lines[j].slice(6);
-                if (!resolved) {
-                  resolved = true;
-                  res.destroy();
-                  resolve(payload);
-                }
-                return;
+                lastPayload = lines[j].slice(6);
               }
             }
           }
         });
         res.on('end', function () {
-          if (!resolved) resolve(null);
+          resolve(lastPayload);
         });
       } else {
         var chunks = [];
@@ -147,6 +146,9 @@ function forwardRequest(message) {
       }
     });
 
+    req.on('timeout', function () {
+      req.destroy(new Error('request timed out after ' + REQUEST_TIMEOUT_MS + 'ms'));
+    });
     req.on('error', reject);
     req.write(body);
     req.end();
@@ -167,7 +169,11 @@ async function main() {
   }
 
   function drain() {
-    if (queue.length === 0) { processing = false; return; }
+    if (queue.length === 0) {
+      processing = false;
+      if (stdinClosed) cleanup();
+      return;
+    }
     processing = true;
     var line = queue.shift();
     processLine(line).then(drain).catch(function (e) {
@@ -178,7 +184,13 @@ async function main() {
 
   async function processLine(line) {
     if (!line.trim()) return;
-    var message = JSON.parse(line);
+    var message;
+    try {
+      message = JSON.parse(line);
+    } catch (e) {
+      process.stderr.write('[bridge] invalid JSON: ' + e.message + '\n');
+      return;
+    }
     var response = await forwardRequest(message);
     if (response && response.trim()) {
       process.stdout.write(response + '\n');
@@ -187,9 +199,8 @@ async function main() {
 
   rl.on('line', enqueue);
   rl.on('close', function () {
-    // stdin closed — drain remaining queue then exit
+    stdinClosed = true;
     if (!processing && queue.length === 0) cleanup();
-    // otherwise drain() will finish and we stay alive for port-forward restart
   });
 }
 
