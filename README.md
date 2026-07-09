@@ -19,6 +19,27 @@ transport = "http"
 url = "http://che-mcp-server:8080/mcp"
 ```
 
+### Local (connecting to a remote cluster)
+
+Connect to the MCP server from your local machine using the stdio bridge. It manages `oc port-forward` internally — auto-starts, monitors, and restarts on failure. Requires `oc login` to the target cluster.
+
+```bash
+# Via npx (no install needed)
+claude mcp add --transport stdio che-mcp -- npx -p che-mcp-server che-mcp-bridge
+
+# Or install globally
+npm install -g che-mcp-server
+claude mcp add --transport stdio che-mcp -- che-mcp-bridge
+```
+
+Configuration via environment variables:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `MCP_NAMESPACE` | Kubernetes namespace | Current `oc project` |
+| `MCP_SERVICE` | Service name | `che-mcp-server` |
+| `MCP_PORT` | Service port | `8080` |
+
 ### Local (from git repo)
 
 ```bash

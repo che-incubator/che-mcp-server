@@ -1,11 +1,12 @@
 {
   "name": "che-mcp-server",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "MCP server for Eclipse Che workspace management and coding agent orchestration",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "che-mcp-server": "dist/index.js"
+    "che-mcp-server": "dist/index.js",
+    "che-mcp-bridge": "stdio-bridge.cjs"
   },
   "scripts": {
     "build": "tsc && cp src/tools/registry.json dist/tools/registry.json",
@@ -19,6 +20,7 @@
   },
   "files": [
     "dist",
+    "stdio-bridge.cjs",
     "README.md"
   ],
   "engines": {
