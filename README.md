@@ -105,29 +105,50 @@ The server resolves the namespace in this order:
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
-| `list_workspaces` | List all DevWorkspaces in the user namespace | None |
-| `create_workspace` | Create a new DevWorkspace from the default empty template and start it | `name` (optional — auto-generated if omitted) |
+| `list_workspaces` | List all DevWorkspaces in the user namespace | `limit`, `offset` (optional) |
+| `create_workspace` | Create a new DevWorkspace and start it | `name` (optional); `repo_url` (optional — git repo to clone); `branch` (optional — requires `repo_url`); `tools` (optional — array of tools to pre-install: `claude-code`, `opencode`, `goose`, `kilocode`, `gemini-cli`, `tmux`, `python3`) |
 | `start_workspace` | Start a stopped DevWorkspace | `workspace` (required) |
-| `stop_workspace` | Stop a running DevWorkspace | `workspace` (required) |
-| `delete_workspace` | Delete a DevWorkspace (regardless of state) | `workspace` (required) |
+| `stop_workspace` | Stop a running DevWorkspace (preserves data) | `workspace` (required) |
+| `delete_workspace` | Delete a DevWorkspace permanently | `workspace` (required) |
 
 ### Workspace Status
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
-| `get_workspace_status` | Get detailed status (phase, conditions, URL, timestamps) | `workspace` (required) |
-| `get_workspace_pod` | Get pod details (pod name, phase, container status) | `workspace` (required) |
+| `get_workspace_status` | Get phase, conditions, URL, and timestamps | `workspace` (required) |
+| `get_workspace_pod` | Get pod name, phase, and per-container status | `workspace` (required) |
 
 ### Agent Sessions
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
-| `launch_coding_agent` | Launch a coding agent in a workspace, starting the workspace if needed | `workspace`, `task` (required); `agent_type` (optional — `claude-code`, `opencode`, `gemini-cli`; default: `claude-code`); `system_prompt_file` (optional — path inside the target workspace to a system prompt file appended via `--append-system-prompt-file`; the file must already exist in the workspace filesystem; claude-code only) |
-| `start_agent_session` | Start a tmux session with a coding agent in a workspace | `workspace`, `command` (required); `session_name`, `container` (optional) |
-| `read_agent_output` | Capture recent terminal output from a tmux session | `workspace` (required); `session_name`, `lines`, `container` (optional) |
-| `send_agent_input` | Send text to a tmux session | `workspace`, `text` (required); `session_name`, `enter`, `container` (optional) |
-| `get_agent_state` | Check if tmux session and process are alive | `workspace` (required); `session_name`, `container` (optional) |
-| `stop_agent_session` | Kill a tmux session | `workspace` (required); `session_name`, `container` (optional) |
+| `launch_coding_agent` | Launch a coding agent, starting the workspace if needed | `workspace`, `task` (required); `agent_type` (optional — `claude-code`, `opencode`, `gemini-cli`); `system_prompt_file` (optional — path inside workspace, claude-code only) |
+| `get_agent_status` | Get agent phase (running/finished/lost/idle) and last output | `workspace` (required) |
+| `list_all_agents` | List all workspaces with active or past agent sessions | `limit`, `offset` (optional) |
+| `send_message_to_agent` | Send a message to a running agent via terminal input | `workspace`, `message` (required) |
+| `get_agent_output` | Read recent terminal output from an agent session | `workspace` (required); `lines` (optional) |
+| `stop_agent` | Stop an agent session and return completion summary | `workspace` (required) |
+| `inject_tool` | Inject an AI tool into a running workspace (requires restart) | `workspace`, `tool` (required) |
+
+### Terminal Sessions (full mode only)
+
+These tools are available when the server runs with `--transport http` (full mode). They provide direct tmux access for advanced use cases.
+
+| Tool | Description | Parameters |
+|------|-------------|------------|
+| `start_terminal_session` | Start a bash tmux session in a workspace | `workspace` (required); `session_name`, `container` (optional) |
+| `read_terminal_output` | Capture recent output from a tmux session | `workspace` (required); `session_name`, `lines`, `container` (optional) |
+| `send_terminal_input` | Send text to a tmux session | `workspace`, `text` (required); `session_name`, `enter`, `container` (optional) |
+| `get_terminal_state` | Check if tmux session and process are alive | `workspace` (required); `session_name`, `container` (optional) |
+| `stop_terminal_session` | Kill a tmux session | `workspace` (required); `session_name`, `container` (optional) |
+| `exec_in_workspace` | Run a shell command and return output | `workspace`, `command` (required); `timeout_seconds`, `session_name`, `container` (optional) |
+
+### Messaging
+
+| Tool | Description | Parameters |
+|------|-------------|------------|
+| `send_message` | Send a message to another agent's inbox | `from`, `to`, `body` (required); `thread_id` (optional) |
+| `receive_messages` | Read and consume messages from an inbox | `session_id` (required); `thread_id` (optional) |
 
 ## Usage Example
 
@@ -135,15 +156,15 @@ The server resolves the namespace in this order:
 1. list_workspaces                         → find available workspaces
 2. create_workspace { name: "test-ws" }    → create a new workspace
 3. get_workspace_status { workspace: "test-ws" }  → wait until phase is Running
-4. start_agent_session { workspace: "test-ws", command: "claude -p 'Add tests'" }
-5. read_agent_output { workspace: "test-ws" }     → monitor progress
-6. send_agent_input { workspace: "test-ws", text: "Yes" }  → respond to prompts
-7. get_agent_state { workspace: "test-ws" }        → check if agent finished
-8. stop_agent_session { workspace: "test-ws" }     → cleanup
+4. launch_coding_agent { workspace: "test-ws", task: "Add tests" }
+5. get_agent_output { workspace: "test-ws" }       → monitor progress
+6. send_message_to_agent { workspace: "test-ws", message: "Yes" }  → respond to prompts
+7. get_agent_status { workspace: "test-ws" }       → check if agent finished
+8. stop_agent { workspace: "test-ws" }             → cleanup
 9. stop_workspace { workspace: "test-ws" }         → stop when done
 ```
 
-> **Tip:** Steps 3–4 can be replaced with `launch_coding_agent { workspace: "test-ws", task: "Add tests" }` — it waits for the workspace to start and launches the agent in one call.
+> **Tip:** `launch_coding_agent` (step 4) handles waiting for the workspace to start and launches the agent in one call — no need to poll `get_workspace_status` separately.
 
 ## Container Deployment
 
