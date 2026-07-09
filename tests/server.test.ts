@@ -36,6 +36,7 @@ describe('startHttpServer', () => {
 
     try {
       const res = await fetch(`http://localhost:${port}/healthz`);
+      expect(res.status).toBe(200);
       expect(res.headers.get('content-type')).toBe('text/plain');
     } finally {
       httpServer.close();
