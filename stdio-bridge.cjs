@@ -116,6 +116,7 @@ function forwardRequest(message) {
       timeout: REQUEST_TIMEOUT_MS,
     }, function (res) {
       if (res.headers['mcp-session-id']) sessionId = res.headers['mcp-session-id'];
+      if (res.statusCode === 404) sessionId = null;
       var ct = res.headers['content-type'] || '';
 
       if (ct.indexOf('text/event-stream') !== -1) {
