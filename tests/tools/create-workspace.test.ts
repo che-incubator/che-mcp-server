@@ -229,6 +229,68 @@ describe('createWorkspace', () => {
     ]);
   });
 
+  it('creates a workspace with post_start_command', async () => {
+    const { getCustomObjectsApi, getNamespace } = await import(
+      '../../src/kube/client.js'
+    );
+    const mockApi = {
+      createNamespacedCustomObject: vi.fn().mockResolvedValue({
+        metadata: { name: 'my-workspace' },
+      }),
+      patchNamespacedCustomObject: vi.fn().mockResolvedValue({}),
+    };
+    vi.mocked(getCustomObjectsApi).mockReturnValue(mockApi as any);
+    vi.mocked(getNamespace).mockReturnValue('test-namespace');
+
+    const { createWorkspace } = await import(
+      '../../src/tools/create-workspace.js'
+    );
+    const result = await createWorkspace({
+      name: 'my-workspace',
+      post_start_command: 'npm install',
+    });
+
+    expect(result).toEqual({
+      name: 'my-workspace',
+      started: true,
+      tools_injected: [],
+    });
+
+    const body = mockApi.createNamespacedCustomObject.mock.calls[0][0].body;
+    expect(body.spec.template.commands).toEqual([
+      {
+        id: 'post-start',
+        exec: { component: 'dev', commandLine: 'npm install' },
+      },
+    ]);
+    expect(body.spec.template.events).toEqual({
+      postStart: ['post-start'],
+    });
+  });
+
+  it('does not add commands or events when post_start_command is omitted', async () => {
+    const { getCustomObjectsApi, getNamespace } = await import(
+      '../../src/kube/client.js'
+    );
+    const mockApi = {
+      createNamespacedCustomObject: vi.fn().mockResolvedValue({
+        metadata: { name: 'my-workspace' },
+      }),
+      patchNamespacedCustomObject: vi.fn().mockResolvedValue({}),
+    };
+    vi.mocked(getCustomObjectsApi).mockReturnValue(mockApi as any);
+    vi.mocked(getNamespace).mockReturnValue('test-namespace');
+
+    const { createWorkspace } = await import(
+      '../../src/tools/create-workspace.js'
+    );
+    await createWorkspace({ name: 'my-workspace' });
+
+    const body = mockApi.createNamespacedCustomObject.mock.calls[0][0].body;
+    expect(body.spec.template.commands).toBeUndefined();
+    expect(body.spec.template.events).toBeUndefined();
+  });
+
   it('throws when branch is provided without repo_url', async () => {
     const { createWorkspace } = await import(
       '../../src/tools/create-workspace.js'
@@ -266,6 +328,60 @@ describe('createWorkspace', () => {
     await createWorkspace({ name: 'ws', repo_url: 'https://gitlab.com/group/sub/repo.git' });
     body = mockApi.createNamespacedCustomObject.mock.calls[1][0].body;
     expect(body.spec.template.projects[0].name).toBe('repo');
+  });
+
+  it('creates a workspace with both tools and post_start_command', async () => {
+    const { getCustomObjectsApi, getNamespace } = await import(
+      '../../src/kube/client.js'
+    );
+    const mockApi = {
+      createNamespacedCustomObject: vi.fn().mockResolvedValue({
+        metadata: { name: 'my-workspace' },
+      }),
+      getNamespacedCustomObject: vi.fn().mockResolvedValue({
+        spec: {
+          template: {
+            commands: [
+              {
+                id: 'post-start',
+                exec: { component: 'dev', commandLine: 'npm install' },
+              },
+            ],
+            events: { postStart: ['post-start'] },
+          },
+        },
+        metadata: {},
+      }),
+      patchNamespacedCustomObject: vi.fn().mockResolvedValue({}),
+    };
+    vi.mocked(getCustomObjectsApi).mockReturnValue(mockApi as any);
+    vi.mocked(getNamespace).mockReturnValue('test-namespace');
+
+    const { createWorkspace } = await import(
+      '../../src/tools/create-workspace.js'
+    );
+    const result = await createWorkspace({
+      name: 'my-workspace',
+      tools: ['opencode'],
+      post_start_command: 'npm install',
+    });
+
+    expect(result).toEqual({
+      name: 'my-workspace',
+      started: true,
+      tools_injected: ['opencode'],
+    });
+
+    const body = mockApi.createNamespacedCustomObject.mock.calls[0][0].body;
+    expect(body.spec.template.commands).toEqual([
+      {
+        id: 'post-start',
+        exec: { component: 'dev', commandLine: 'npm install' },
+      },
+    ]);
+    expect(body.spec.template.events).toEqual({
+      postStart: ['post-start'],
+    });
   });
 
   describe('deriveProjectName', () => {

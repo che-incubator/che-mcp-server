@@ -7,6 +7,7 @@ interface CreateWorkspaceParams {
   tools?: string[];
   repo_url?: string;
   branch?: string;
+  post_start_command?: string;
 }
 
 export function deriveProjectName(repoUrl: string): string {
@@ -77,6 +78,24 @@ export async function createWorkspace(params: CreateWorkspaceParams): Promise<{
       gitSource.checkoutFrom = { revision: params.branch };
     }
     template.projects = [{ name: projectName, git: gitSource }];
+  }
+
+  if (params.post_start_command) {
+    const existingCommands = Array.isArray(template.commands)
+      ? template.commands
+      : [];
+    template.commands = [
+      ...existingCommands,
+      {
+        id: 'post-start',
+        exec: { component: 'dev', commandLine: params.post_start_command },
+      },
+    ];
+    const existingEvents =
+      template.events && typeof template.events === 'object'
+        ? (template.events as Record<string, unknown>)
+        : {};
+    template.events = { ...existingEvents, postStart: ['post-start'] };
   }
 
   const body = {
