@@ -81,13 +81,21 @@ export async function createWorkspace(params: CreateWorkspaceParams): Promise<{
   }
 
   if (params.post_start_command) {
+    const existingCommands = Array.isArray(template.commands)
+      ? template.commands
+      : [];
     template.commands = [
+      ...existingCommands,
       {
         id: 'post-start',
         exec: { component: 'dev', commandLine: params.post_start_command },
       },
     ];
-    template.events = { postStart: ['post-start'] };
+    const existingEvents =
+      template.events && typeof template.events === 'object'
+        ? (template.events as Record<string, unknown>)
+        : {};
+    template.events = { ...existingEvents, postStart: ['post-start'] };
   }
 
   const body = {

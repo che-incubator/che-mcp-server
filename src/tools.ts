@@ -320,6 +320,8 @@ export function createMcpServer(mode: ServerMode = 'orchestration'): McpServer {
         .describe('Branch or revision to check out (requires repo_url)'),
       post_start_command: z
         .string()
+        .trim()
+        .min(1)
         .optional()
         .describe('Shell command to run in the dev container after workspace starts'),
     },

@@ -330,6 +330,60 @@ describe('createWorkspace', () => {
     expect(body.spec.template.projects[0].name).toBe('repo');
   });
 
+  it('creates a workspace with both tools and post_start_command', async () => {
+    const { getCustomObjectsApi, getNamespace } = await import(
+      '../../src/kube/client.js'
+    );
+    const mockApi = {
+      createNamespacedCustomObject: vi.fn().mockResolvedValue({
+        metadata: { name: 'my-workspace' },
+      }),
+      getNamespacedCustomObject: vi.fn().mockResolvedValue({
+        spec: {
+          template: {
+            commands: [
+              {
+                id: 'post-start',
+                exec: { component: 'dev', commandLine: 'npm install' },
+              },
+            ],
+            events: { postStart: ['post-start'] },
+          },
+        },
+        metadata: {},
+      }),
+      patchNamespacedCustomObject: vi.fn().mockResolvedValue({}),
+    };
+    vi.mocked(getCustomObjectsApi).mockReturnValue(mockApi as any);
+    vi.mocked(getNamespace).mockReturnValue('test-namespace');
+
+    const { createWorkspace } = await import(
+      '../../src/tools/create-workspace.js'
+    );
+    const result = await createWorkspace({
+      name: 'my-workspace',
+      tools: ['opencode'],
+      post_start_command: 'npm install',
+    });
+
+    expect(result).toEqual({
+      name: 'my-workspace',
+      started: true,
+      tools_injected: ['opencode'],
+    });
+
+    const body = mockApi.createNamespacedCustomObject.mock.calls[0][0].body;
+    expect(body.spec.template.commands).toEqual([
+      {
+        id: 'post-start',
+        exec: { component: 'dev', commandLine: 'npm install' },
+      },
+    ]);
+    expect(body.spec.template.events).toEqual({
+      postStart: ['post-start'],
+    });
+  });
+
   describe('deriveProjectName', () => {
     it('lowercases uppercase letters', async () => {
       const { deriveProjectName } = await import('../../src/tools/create-workspace.js');
