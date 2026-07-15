@@ -318,10 +318,14 @@ export function createMcpServer(mode: ServerMode = 'orchestration'): McpServer {
         .string()
         .optional()
         .describe('Branch or revision to check out (requires repo_url)'),
+      post_start_command: z
+        .string()
+        .optional()
+        .describe('Shell command to run in the dev container after workspace starts'),
     },
-    async ({ name, tools, repo_url, branch }) => {
+    async ({ name, tools, repo_url, branch, post_start_command }) => {
       try {
-        const result = await createWorkspace({ name, tools, repo_url, branch });
+        const result = await createWorkspace({ name, tools, repo_url, branch, post_start_command });
         return { content: [{ type: 'text', text: JSON.stringify(result) }] };
       } catch (error) {
         return toolError(error);
