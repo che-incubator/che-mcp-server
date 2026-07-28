@@ -211,4 +211,4 @@ Sessions use `remain-on-exit on` and 5000-line scrollback.
 
 ## License
 
-Apache-2.0
+Eclipse Public License - v 2.0
